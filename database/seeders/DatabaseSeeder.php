@@ -14,15 +14,52 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call([
+            SuperAdminSeeder::class,
+            StockSeeder::class,
+        ]);
 
-        User::firstOrCreate(
-            ['email' => 'test@example.com'],
-            [
-                'name' => 'Test User',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
+        // Create test users for development
+        if (app()->environment('local')) {
+            User::firstOrCreate(
+                ['email' => 'admin@pharmacie.com'],
+                [
+                    'name' => 'Admin Test',
+                    'password' => Hash::make('password'),
+                    'role' => 'admin',
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            User::firstOrCreate(
+                ['email' => 'vendeur@pharmacie.com'],
+                [
+                    'name' => 'Vendeur Test',
+                    'password' => Hash::make('password'),
+                    'role' => 'vendeur',
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            User::firstOrCreate(
+                ['email' => 'caissier@pharmacie.com'],
+                [
+                    'name' => 'Caissier Test',
+                    'password' => Hash::make('password'),
+                    'role' => 'caissier',
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            User::firstOrCreate(
+                ['email' => 'pharmacien@pharmacie.com'],
+                [
+                    'name' => 'Pharmacien Test',
+                    'password' => Hash::make('password'),
+                    'role' => 'pharmacien',
+                    'email_verified_at' => now(),
+                ]
+            );
+        }
     }
 }
