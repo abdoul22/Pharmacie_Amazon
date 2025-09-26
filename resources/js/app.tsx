@@ -1,28 +1,17 @@
 import '../css/app.css';
-
-import { createInertiaApp } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { initializeTheme } from './hooks/use-appearance';
+import { initializeTheme } from './hooks/use-appearance.tsx';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+// Importation du Router principal
+import AppRouter from './router/AppRouter';
 
-createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) =>
-        resolvePageComponent(
-            `./pages/${name}.tsx`,
-            import.meta.glob('./pages/**/*.tsx'),
-        ),
-    setup({ el, App, props }) {
-        const root = createRoot(el);
+const appName = import.meta.env.VITE_APP_NAME || 'Amazon Pharmacie';
 
-        root.render(<App {...props} />);
-    },
-    progress: {
-        color: '#4B5563',
-    },
-});
+// Créer l'application React avec React Router
+const root = createRoot(document.getElementById('app')!);
 
-// This will set light / dark mode on load...
+root.render(<AppRouter />);
+
+// Initialiser le thème dark/light
 initializeTheme();

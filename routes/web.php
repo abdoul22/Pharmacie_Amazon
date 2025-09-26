@@ -1,20 +1,14 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', function () {
-    return Inertia::render('welcome');
-})->name('home');
+/**
+ * SPA Route - Toutes les routes frontend sont gérées par React Router
+ * Laravel sert uniquement la page principale pour toutes les routes
+ */
+Route::get('/{any}', function () {
+    return view('app');
+})->where('any', '.*')->name('spa');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-});
-
-// Routes web supprimées - Migration vers SPA avec API REST uniquement
-// Toutes les routes pharmacy sont maintenant dans routes/api.php
-
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+// Note: Les routes API sont dans routes/api.php
+// Les routes d'authentification Laravel (pour la compatibilité) sont dans routes/auth.php

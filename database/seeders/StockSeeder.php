@@ -109,7 +109,14 @@ class StockSeeder extends Seeder
                 'dosage' => '500mg',
                 'expiry_date' => now()->addMonths(18)->format('Y-m-d'),
                 'description' => 'Antibiotique à large spectre',
-                'status' => 'active'
+                'status' => 'active',
+                'prescription_type' => 'sur_ordonnance',
+                'requires_prescription' => true,
+                'prescription_notes' => 'Antibiotique nécessitant une ordonnance médicale',
+                'restricted_conditions' => [
+                    'max_quantity_per_sale' => 30,
+                    'require_id_verification' => false
+                ]
             ],
             [
                 'name' => 'Paracétamol 1000mg',
@@ -125,7 +132,11 @@ class StockSeeder extends Seeder
                 'dosage' => '1000mg',
                 'expiry_date' => now()->addMonths(24)->format('Y-m-d'),
                 'description' => 'Antalgique et antipyrétique',
-                'status' => 'active'
+                'status' => 'active',
+                'prescription_type' => 'libre',
+                'requires_prescription' => false,
+                'prescription_notes' => 'Médicament en vente libre',
+                'restricted_conditions' => null
             ],
             [
                 'name' => 'Vitamine C 1000mg',
@@ -141,7 +152,11 @@ class StockSeeder extends Seeder
                 'dosage' => '1000mg',
                 'expiry_date' => now()->addMonths(36)->format('Y-m-d'),
                 'description' => 'Complément vitaminique',
-                'status' => 'active'
+                'status' => 'active',
+                'prescription_type' => 'libre',
+                'requires_prescription' => false,
+                'prescription_notes' => 'Complément alimentaire en vente libre',
+                'restricted_conditions' => null
             ],
             [
                 'name' => 'Bétadine 10%',
@@ -157,7 +172,11 @@ class StockSeeder extends Seeder
                 'dosage' => '10%',
                 'expiry_date' => now()->addMonths(12)->format('Y-m-d'),
                 'description' => 'Antiseptique à large spectre',
-                'status' => 'active'
+                'status' => 'active',
+                'prescription_type' => 'libre',
+                'requires_prescription' => false,
+                'prescription_notes' => 'Antiseptique externe en vente libre',
+                'restricted_conditions' => null
             ],
             [
                 'name' => 'Aspirine 500mg',
@@ -173,7 +192,14 @@ class StockSeeder extends Seeder
                 'dosage' => '500mg',
                 'expiry_date' => now()->addDays(25)->format('Y-m-d'), // Expiring soon for testing alerts
                 'description' => 'Antalgique, antipyrétique et anti-inflammatoire',
-                'status' => 'active'
+                'status' => 'active',
+                'prescription_type' => 'sur_ordonnance',
+                'requires_prescription' => true,
+                'prescription_notes' => 'Anti-inflammatoire nécessitant une ordonnance pour dosage élevé',
+                'restricted_conditions' => [
+                    'max_quantity_per_sale' => 20,
+                    'age_restriction' => 16
+                ]
             ],
         ];
 

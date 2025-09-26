@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SuperAdminSeeder::class,
             StockSeeder::class,
+            InsuranceSeeder::class,
         ]);
 
         // Create test users for development

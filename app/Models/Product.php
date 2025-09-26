@@ -29,6 +29,10 @@ class Product extends Model
         'description',
         'image_path',
         'status',
+        'prescription_type',
+        'requires_prescription',
+        'prescription_notes',
+        'restricted_conditions',
     ];
 
     protected $casts = [
@@ -38,6 +42,8 @@ class Product extends Model
         'low_stock_threshold' => 'integer',
         'expiry_date' => 'date',
         'status' => 'string',
+        'requires_prescription' => 'boolean',
+        'restricted_conditions' => 'array',
     ];
 
     protected $appends = [
@@ -191,6 +197,69 @@ class Product extends Model
                 ->orWhere('generic_name', 'like', "%{$search}%")
                 ->orWhere('barcode', 'like', "%{$search}%");
         });
+    }
+
+    /**
+     * Scope pour produits nécessitant une ordonnance
+     */
+    public function scopeRequiresPrescription($query)
+    {
+        return $query->where('requires_prescription', true);
+    }
+
+    /**
+     * Scope par type d'ordonnance
+     */
+    public function scopeByPrescriptionType($query, string $type)
+    {
+        return $query->where('prescription_type', $type);
+    }
+
+    /**
+     * Obtenir le libellé du type d'ordonnance
+     */
+    public function getPrescriptionTypeNameAttribute(): string
+    {
+        return match ($this->prescription_type) {
+            'libre' => 'Libre (sans ordonnance)',
+            'sur_ordonnance' => 'Sur ordonnance',
+            'controle' => 'Médicament contrôlé',
+            default => 'Non défini'
+        };
+    }
+
+    /**
+     * Vérifier si la vente nécessite une ordonnance valide
+     */
+    public function needsValidPrescription(): bool
+    {
+        return $this->requires_prescription || in_array($this->prescription_type, ['sur_ordonnance', 'controle']);
+    }
+
+    /**
+     * Vérifier si le médicament est contrôlé (nécessite autorisation spéciale)
+     */
+    public function isControlledSubstance(): bool
+    {
+        return $this->prescription_type === 'controle';
+    }
+
+    /**
+     * Obtenir les conditions de restriction
+     */
+    public function getRestrictionRules(): array
+    {
+        return $this->restricted_conditions ?? [];
+    }
+
+    /**
+     * Ajouter une condition de restriction
+     */
+    public function addRestrictionRule(string $rule, mixed $value = null): void
+    {
+        $conditions = $this->getRestrictionRules();
+        $conditions[$rule] = $value;
+        $this->update(['restricted_conditions' => $conditions]);
     }
 
     /**

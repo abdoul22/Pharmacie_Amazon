@@ -1,16 +1,13 @@
 # 🏥 Pharmacie Mauritanienne - Amazon (MVP Avancé)
 
-Application web moderne de gestion de pharmacie adaptée au contexte mauritanien avec support **offline/online**.
-Gère stocks (lots & DLC), ventes, retours/remboursements, contraintes d'ordonnance, fournisseurs, facturation (paiements/crédits/assurances), trésorerie, utilisateurs multi-rôles, et mode d'urgence pour pallier aux coupures fréquentes de connectivité.
+Application web moderne de gestion de pharmacie adaptée au contexte mauritanien.
+Gère stocks (lots & DLC), ventes, retours/remboursements, contraintes d'ordonnance, fournisseurs, facturation (paiements/crédits/assurances), trésorerie, utilisateurs multi-rôles.
 
 ## 🌍 **Spécificités Mauritaniennes**
 
-- **Architecture Offline/Online** : Fonctionnement continu même sans internet
-- **Interface tactile** optimisée pour tablettes et écrans tactiles
 - **Système bilingue** : Français ⇄ Arabe (RTL) avec changement à la volée
-- **Dark Mode intelligent** : Mode sombre adaptatif selon l'heure locale
+- **Dark Mode intelligent** : Mode sombre adaptatif
 - **Gestion ordonnances** conforme à la réglementation sanitaire mauritanienne
-- **Mode d'urgence** pour continuité de service en cas de panne système
 - **Système de paiements intégré** : Salaires, fournisseurs, dépenses, ventes
 - **Gestion financière complète** : Crédits, assurances, comptabilité
 
@@ -479,87 +476,7 @@ npm install framer-motion
 # resources/js/components/blocks/
 ```
 
-### Étape 4.5 : Dépendances PWA & Offline (NOUVEAU)
-
-```bash
-# PWA et Service Worker
-npm install workbox-webpack-plugin @vite-pwa/vite-plugin
-
-# Gestion état global et offline
-npm install @reduxjs/toolkit react-redux
-npm install dexie # IndexedDB wrapper
-
-# WebSocket temps réel
-npm install pusher-js laravel-echo
-
-# Cache et performance
-composer require predis/predis # Redis client
-npm install lodash.debounce lodash.throttle
-
-# Gestion réseau et reconnection
-npm install axios-retry network-information-types
-```
-
-### Configuration PWA (vite.config.ts)
-
-```typescript
-import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
-import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa';
-
-export default defineConfig({
-    plugins: [
-        laravel({
-            input: 'resources/js/app.tsx',
-            refresh: true,
-        }),
-        react(),
-        VitePWA({
-            registerType: 'autoUpdate',
-            workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-                runtimeCaching: [
-                    {
-                        urlPattern: /^https:\/\/api\.pharmacie\.local\//,
-                        handler: 'NetworkFirst',
-                        options: {
-                            cacheName: 'api-cache',
-                            expiration: {
-                                maxEntries: 500,
-                                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-                            },
-                        },
-                    },
-                ],
-            },
-            manifest: {
-                name: 'Pharmacie Mauritanienne',
-                short_name: 'PharmaMR',
-                description: 'Gestion pharmacie offline/online',
-                theme_color: '#10b981',
-                background_color: '#ffffff',
-                display: 'standalone',
-                orientation: 'portrait-primary',
-                icons: [
-                    {
-                        src: 'pwa-192x192.png',
-                        sizes: '192x192',
-                        type: 'image/png',
-                    },
-                    {
-                        src: 'pwa-512x512.png',
-                        sizes: '512x512',
-                        type: 'image/png',
-                    },
-                ],
-            },
-        }),
-    ],
-});
-```
-
-### Étape 5 : Installation Complète du Projet
+### Étape 4.5 : Installation Complète du Projet
 
 ```bash
 # Cloner le projet
@@ -689,27 +606,25 @@ Toute la documentation est dans `/specs/` selon le standard **spec-kit** :
 
 ### **Sprint 0 : Setup & Architecture** (1 semaine) ⚙️
 
-- [x] Repo, CI, starter Laravel + React + PWA
-- [ ] **Architecture offline/online** avec Service Worker
+- [x] Repo, CI, starter Laravel + React
 - [ ] DB schema complet avec nouvelles tables
-- [ ] **Indicateur de connectivité** en temps réel
+- [ ] Configuration environnement production
 
 ### **Sprint 1 : Core & Authentification** (2 semaines) 🔐
 
 - [x] Auth 4 rôles + workflow d'approbation
 - [x] UI layouts responsive (mobile-first)
 - [x] Gestion produits + contraintes ordonnance
-- [x] CRUD lots avec **gestion offline**
+- [x] CRUD lots avec traçabilité
 
-### **Sprint 2 : Architecture SPA & POS Tactile** (2 semaines) 🛒
+### **Sprint 2 : Architecture SPA & POS** (2 semaines) 🛒
 
 - [ ] **🚨 CORRECTION Architecture SPA** : Supprimer routes web.php, tout en API REST
 - [ ] **React Router DOM** : Routage client-side complet
 - [ ] **API Client Axios** : Communication REST uniquement
-- [ ] **POS tactile** avec raccourcis clavier (F1-F9)
+- [ ] **Point de Vente** avec interface moderne
 - [ ] Modes paiement multiples (espèces, mobile money, carte)
 - [ ] Facturation PDF + TVA mauritanienne
-- [ ] **Mode offline complet** + synchronisation
 
 ### **Sprint 3 : Retours & Ordonnances** (2 semaines) 💊
 
@@ -720,10 +635,10 @@ Toute la documentation est dans `/specs/` selon le standard **spec-kit** :
 
 ### **Sprint 4 : Avancé & Fournisseurs** (2 semaines) 📦
 
-- [ ] Fournisseurs & commandes (offline compatible)
-- [ ] **Mode d'urgence** + réconciliation
-- [ ] Correction stock (oversell) offline
+- [ ] Fournisseurs & commandes complètes
+- [ ] Correction stock et ajustements
 - [ ] **Migration données** existantes
+- [ ] **Rapports avancés**
 
 ### **Sprint 5 : Internationalisation & UI** (2 semaines) 🌍
 
@@ -764,7 +679,7 @@ Toute la documentation est dans `/specs/` selon le standard **spec-kit** :
 
 ## 📋 **Modules Détaillés (MVP)**
 
-### 🔄 **Architecture SPA + Offline/Online** (PRIORITÉ HAUTE)
+### 🔄 **Architecture SPA** (PRIORITÉ HAUTE)
 
 **Architecture Single Page Application :**
 
@@ -816,27 +731,6 @@ const ApiClient = {
 // Route::get('/pharmacy/products', 'showBladeView') // Non!
 ```
 
-**Stratégie technique Offline :**
-
-- **Service Worker** : Cache ressources critiques
-- **IndexedDB** : Stockage local 50MB+
-- **Queue de synchronisation** : Actions offline persistantes
-- **Monitoring réseau** : Détection qualité connexion
-
-**Données critiques offline :**
-
-- Catalogue produits avec stocks actuels
-- Modes de paiement et paramètres
-- Historique ventes (7 jours)
-- Préférences utilisateur
-
-**Synchronisation :**
-
-- Automatique toutes les 5 minutes si online
-- Manuelle via bouton "Sync Now"
-- Résolution conflits : dernière modification gagne
-- Log erreurs de synchronisation
-
 ### 💊 **Gestion Ordonnances** (NOUVEAU)
 
 **Types de médicaments :**
@@ -869,27 +763,6 @@ const ApiClient = {
 - Génération avoir ou remboursement
 - Impact automatique stock + comptabilité
 
-### 🆘 **Mode d'Urgence** (NOUVEAU)
-
-**Déclenchement :**
-
-- Automatique si système inaccessible >2min
-- Manuel via raccourci **F9**
-- Interface mobile dédiée
-
-**Fonctionnalités minimales :**
-
-- Saisie vente express (code-barres, prix)
-- Enregistrement paiements
-- Impression ticket basique
-- **Stockage local sécurisé**
-
-**Réconciliation :**
-
-- Import automatique au redémarrage
-- Validation transactions importantes
-- Détection doublons automatique
-
 ### 💾 **Backup & Restauration** (NOUVEAU)
 
 **Backup automatique :**
@@ -905,24 +778,6 @@ const ApiClient = {
 - Validation avant écrasement
 - Restauration sélective par module
 - Log des opérations
-
-### 🎮 **Interface Tactile & Raccourcis** (NOUVEAU)
-
-**Raccourcis clavier :**
-
-- **F1** : Nouvelle vente
-- **F2** : Recherche produit
-- **F3** : Retour/remboursement
-- **F9** : Mode d'urgence
-- **Échap** : Annuler action
-- **Enter** : Valider
-
-**Interface tactile :**
-
-- Boutons minimum 44px (accessibility)
-- Gestes swipe navigation
-- Double-tap confirmation
-- Interface épurée petits écrans
 
 ### 🌍 **Système Bilingue Français/Arabe** (NOUVEAU)
 
@@ -1697,13 +1552,10 @@ const MauritanianPaymentServices = {
 - ✅ **Architecture SPA** : Navigation instantanée sans rechargement page
 - ✅ **React Router DOM** : Routage client-side complet
 - ✅ **API REST uniquement** : Communication JSON, pas de HTML
-- ✅ **Connectivité** : App fonctionne 100% offline pendant 48h minimum
-- ✅ **Synchronisation** : Réconciliation automatique sans perte de données
-- ✅ **Performance** : POS tactile fluide, scan code-barres <2sec
+- ✅ **Performance** : Point de Vente fluide, scan code-barres <2sec
 - ✅ **Retours** : Workflow retour complet avec impact stock/compta
 - ✅ **Ordonnances** : Blocage vente médicaments sans prescription
 - ✅ **Backup** : Restauration complète base en <5min
-- ✅ **Urgence** : Mode dégradé opérationnel + réconciliation
 - ✅ **Mobile** : Interface utilisable sur tablette 10" minimum
 
 ### **Fonctionnalités Avancées (Nouveaux Modules)**
@@ -1723,17 +1575,17 @@ const MauritanianPaymentServices = {
 
 **Techniques :**
 
-- **Uptime offline** : 99.9% disponibilité même sans internet
-- **Sync success rate** : >95% synchronisations réussies
 - **Performance POS** : <3sec par transaction moyenne
-- **Recovery time** : <1min retour normal après panne
+- **Disponibilité** : >99% temps de fonctionnement
+- **Response time** : <500ms requêtes API
+- **Stabilité** : Pas de crash pendant les heures d'ouverture
 
 **Métier :**
 
 - **Réduction erreurs stock** : -80% vs système manuel
 - **Vitesse transaction** : +50% vs logiciel existant
 - **Conformité ordonnances** : 100% médicaments contrôlés
-- **Satisfaction utilisateur** : >8/10 sur interface tactile
+- **Satisfaction utilisateur** : >8/10 sur interface
 
 **Nouveaux Modules :**
 
@@ -1764,8 +1616,7 @@ const MauritanianPaymentServices = {
 - **Framework** : React + React Router + TailwindCSS
 - **UI Components** : shadcn/ui + ReactBits + MVPBlocks
 - **Communication** : Axios pour API REST (pas de rechargement page)
-- **PWA** : Service Worker pour cache et offline
-- **Storage** : IndexedDB (50MB+ données offline)
+- **Storage** : LocalStorage pour préférences utilisateur
 - **État** : Context/Redux pour gestion state global
 - **Routage** : Client-side routing avec React Router DOM
 
@@ -1773,14 +1624,11 @@ const MauritanianPaymentServices = {
 
 ```sql
 -- Tables critiques système
-sync_queue: actions en attente synchronisation
-offline_sales: ventes mode dégradé
 prescriptions: gestion ordonnances
 returns: historique retours/remboursements
 audit_logs: traçabilité complète
 backup_logs: historique sauvegardes
 user_approvals: workflow d'approbation comptes
-emergency_sales: transactions mode d'urgence
 
 -- Tables gestion pharmaceutique (CŒUR MÉTIER)
 batches: lots pharmaceutiques avec traçabilité complète
@@ -1844,26 +1692,19 @@ suppliers_orders: commandes fournisseurs
 
 ## 🧪 **Plan de Tests Intensifs**
 
-### **Tests Critiques Offline**
-
-- Simulation coupures réseau aléatoires
-- Test réconciliation données conflictuelles
-- Performance avec cache plein (50MB+)
-- Synchronisation massive (500+ transactions)
-
 ### **Tests d'Intégration**
 
-- Workflow complet : vente offline → sync → retour online
-- Mode d'urgence → réconciliation automatique
+- Workflow complet vente avec différents modes paiement
 - Backup/restore avec données volumineuses
 - Migration données depuis autre système
+- Performance sous charge (100+ utilisateurs simultanés)
 
 ### **Tests Utilisabilité**
 
-- Interface tactile sur tablette 10"
-- Raccourcis clavier (F1-F9)
+- Interface responsive sur tablette 10"
 - Workflow ordonnances médicales
 - Performance POS (<3sec par transaction)
+- Tests d'accessibilité WCAG 2.1
 
 ## 📞 **Support & Documentation**
 
@@ -1965,12 +1806,12 @@ suppliers_orders: commandes fournisseurs
 
 #### **1.2 API Extensions Simples**
 
-| Tâche                                 | Complexité | Durée | Priorité | Description                                            |
-| ------------------------------------- | ---------- | ----- | -------- | ------------------------------------------------------ |
-| ✅ **API /pharmacy/dashboard**        | 🟢 Facile  | 3h    | ⚡ Haute | ~~Endpoint JSON pour dashboard principal~~ **TERMINÉ** |
-| **API modes paiement**                | 🟢 Facile  | 2h    | ⚡ Haute | GET /api/pharmacy/payments/methods                     |
-| **CRUD assurances API**               | 🟡 Moyen   | 1j    | ⚡ Haute | Create/Read/Update/Delete assurances                   |
-| **Configuration produits ordonnance** | 🟡 Moyen   | 1j    | ⚡ Haute | Champ prescription_requise par produit                 |
+| Tâche                                    | Complexité | Durée | Priorité | Description                                            |
+| ---------------------------------------- | ---------- | ----- | -------- | ------------------------------------------------------ |
+| ✅ **API /pharmacy/dashboard**           | 🟢 Facile  | 3h    | ⚡ Haute | ~~Endpoint JSON pour dashboard principal~~ **TERMINÉ** |
+| ✅ **API modes paiement**                | 🟢 Facile  | 2h    | ⚡ Haute | ~~GET /api/pharmacy/payments/methods~~ **TERMINÉ**     |
+| ✅ **CRUD assurances API**               | 🟡 Moyen   | 1j    | ⚡ Haute | ~~Create/Read/Update/Delete assurances~~ **TERMINÉ**   |
+| ✅ **Configuration produits ordonnance** | 🟡 Moyen   | 1j    | ⚡ Haute | ~~Champ prescription_requise par produit~~ **TERMINÉ** |
 
 #### **1.3 UI/UX Basiques**
 
@@ -2004,34 +1845,31 @@ suppliers_orders: commandes fournisseurs
 
 #### **2.3 UI/UX Avancées**
 
-| Tâche                           | Complexité | Durée | Priorité   | Description                     |
-| ------------------------------- | ---------- | ----- | ---------- | ------------------------------- |
-| **RTL complet (Arabe)**         | 🟡 Moyen   | 1sem  | 🟡 Moyenne | Direction RTL + ajustements CSS |
-| **Raccourcis clavier F1-F9**    | 🟡 Moyen   | 3j    | ⚡ Haute   | Event listeners + shortcuts     |
-| **Interface tactile optimisée** | 🟡 Moyen   | 1sem  | ⚡ Haute   | Boutons 44px+ + gestes touch    |
-| **Notifications temps réel**    | 🟡 Moyen   | 4j    | 🟡 Moyenne | Toast + WebSocket optionnel     |
+| Tâche                        | Complexité | Durée | Priorité   | Description                     |
+| ---------------------------- | ---------- | ----- | ---------- | ------------------------------- |
+| **RTL complet (Arabe)**      | 🟡 Moyen   | 1sem  | 🟡 Moyenne | Direction RTL + ajustements CSS |
+| **Interface responsive**     | 🟡 Moyen   | 1sem  | ⚡ Haute   | Optimisation mobile/tablette    |
+| **Notifications temps réel** | 🟡 Moyen   | 4j    | 🟡 Moyenne | Toast + WebSocket optionnel     |
 
 ### 🔴 **NIVEAU 3 - COMPLEXES (2-4 semaines chacune)**
 
 #### **3.1 Architecture Avancée**
 
-| Tâche                           | Complexité       | Durée  | Priorité    | Description                           |
-| ------------------------------- | ---------------- | ------ | ----------- | ------------------------------------- |
-| **Service Worker + PWA**        | 🔴 Complexe      | 3sem   | 🔥 CRITIQUE | Cache offline + sync background       |
-| **IndexedDB + Sync Queue**      | 🔴 Complexe      | 2.5sem | 🔥 CRITIQUE | Stockage local + queue actions        |
-| **Mode offline complet**        | 🔴 Très Complexe | 4sem   | 🔥 CRITIQUE | Fonctionnement sans internet          |
-| **Synchronisation automatique** | 🔴 Très Complexe | 3sem   | 🔥 CRITIQUE | Réconciliation données online/offline |
+| Tâche                         | Complexité  | Durée  | Priorité    | Description                      |
+| ----------------------------- | ----------- | ------ | ----------- | -------------------------------- |
+| **Optimisation performances** | 🔴 Complexe | 2sem   | ⚡ HAUTE    | Cache intelligent + lazy loading |
+| **Système de monitoring**     | 🔴 Complexe | 2.5sem | 🟡 MOYENNE  | Logging + alertes + métriques    |
+| **Sécurité renforcée**        | 🔴 Complexe | 3sem   | 🔥 CRITIQUE | Audit + chiffrement + validation |
 
 #### **3.2 Modules Métier Complexes**
 
 | Tâche                            | Complexité  | Durée  | Priorité    | Description                             |
 | -------------------------------- | ----------- | ------ | ----------- | --------------------------------------- |
-| **POS tactile complet**          | 🔴 Complexe | 3sem   | 🔥 CRITIQUE | Scanner + panier + calculs + impression |
+| **Point de Vente complet**       | 🔴 Complexe | 3sem   | 🔥 CRITIQUE | Scanner + panier + calculs + impression |
 | **Paiements fractionnés**        | 🔴 Complexe | 2.5sem | 🔥 CRITIQUE | Multi-modes + validation + APIs         |
 | **Hub 7 paiements mauritaniens** | 🔴 Complexe | 3sem   | 🔥 CRITIQUE | Intégration APIs Bankily/Masrivi/etc    |
 | **Crédit personnel avancé**      | 🔴 Complexe | 2sem   | ⚡ Haute    | Workflow approbation + relances         |
 | **Crédit assurance manuel**      | 🔴 Complexe | 2sem   | ⚡ Haute    | Interface gestion + paiements manuels   |
-| **Mode d'urgence**               | 🔴 Complexe | 2.5sem | 🔥 CRITIQUE | Interface minimaliste + réconciliation  |
 
 #### **3.3 Intégrations Système**
 
@@ -2046,12 +1884,11 @@ suppliers_orders: commandes fournisseurs
 
 #### **4.1 Systèmes Critiques**
 
-| Tâche                            | Complexité       | Durée | Priorité    | Description                         |
-| -------------------------------- | ---------------- | ----- | ----------- | ----------------------------------- |
-| **Architecture offline robuste** | ⚫ Très Complexe | 6sem  | 🔥 CRITIQUE | Sync complète + résolution conflits |
-| **Système de tests complet**     | ⚫ Très Complexe | 4sem  | 🟡 Moyenne  | Tests unitaires + intégration + e2e |
-| **Package déploiement auto**     | ⚫ Complexe      | 3sem  | ⚡ Haute    | Auto-installeur Windows/Linux/Mac   |
-| **Monitoring & Analytics**       | ⚫ Complexe      | 3sem  | 🟡 Moyenne  | Métriques + alertes + dashboards    |
+| Tâche                        | Complexité       | Durée | Priorité   | Description                         |
+| ---------------------------- | ---------------- | ----- | ---------- | ----------------------------------- |
+| **Système de tests complet** | ⚫ Très Complexe | 4sem  | 🟡 Moyenne | Tests unitaires + intégration + e2e |
+| **Package déploiement auto** | ⚫ Complexe      | 3sem  | ⚡ Haute   | Auto-installeur Windows/Linux/Mac   |
+| **Monitoring & Analytics**   | ⚫ Complexe      | 3sem  | 🟡 Moyenne | Métriques + alertes + dashboards    |
 
 ## 📊 **PLAN D'EXÉCUTION RECOMMANDÉ**
 
@@ -2067,8 +1904,8 @@ Semaine 4: Modules métier simples (Niveau 2.2 partie)
 ### **🏗️ Phase 2 : Core Features (6-8 semaines)**
 
 ```
-Semaines 5-6: POS Tactile (Niveau 3.2)
-Semaines 7-8: Service Worker + PWA (Niveau 3.1 partie)
+Semaines 5-6: Point de Vente moderne (Niveau 3.2)
+Semaines 7-8: Optimisation performances (Niveau 3.1 partie)
 Semaines 9-10: Paiements fractionnés (Niveau 3.2)
 Semaines 11-12: Modules crédits (Niveau 3.2)
 ```
@@ -2076,7 +1913,7 @@ Semaines 11-12: Modules crédits (Niveau 3.2)
 ### **🚀 Phase 3 : Advanced & Polish (4-6 semaines)**
 
 ```
-Semaines 13-14: Mode offline complet (Niveau 3.1)
+Semaines 13-14: Sécurité renforcée (Niveau 3.1)
 Semaines 15-16: Intégrations mauritaniennes (Niveau 3.3)
 Semaines 17-18: Tests + Déploiement (Niveau 4.1 partie)
 ```
@@ -2092,15 +1929,15 @@ Semaines 17-18: Tests + Déploiement (Niveau 4.1 partie)
 
 ### **⚡ PROCHAINES PRIORITÉS (Semaine suivante)**
 
-1. **POS tactile MVP** (interface simple)
+1. **Point de Vente MVP** (interface simple)
 2. **Paiements fractionnés basiques** (2-3 modes)
-3. **Service Worker foundation** (cache basique)
-4. **Mode offline minimal** (lecture seule)
+3. **Optimisation performances** (cache basique)
+4. **Interface responsive** (mobile/tablette)
 
 ### **📋 CRITÈRES DE VALIDATION**
 
 - ✅ **Navigation SPA** : Aucun rechargement de page
 - ✅ **Responsive** : Fonctionne sur tablette 10"
 - ✅ **Performance** : <3sec par action
-- ✅ **Offline** : 80% fonctionnalités disponibles
+- ✅ **Stabilité** : Pas de crash pendant heures ouverture
 - ✅ **Paiements** : 3+ modes mauritaniens fonctionnels

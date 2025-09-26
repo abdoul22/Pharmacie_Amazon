@@ -36,6 +36,12 @@ Route::prefix('stock')->group(function () {
 // Alternative public route without trailing slash
 Route::get('stock', [\App\Http\Controllers\Api\StockController::class, 'publicInfo'])->name('stock.public.alt');
 
+// Public pharmacy endpoints
+Route::prefix('pharmacy')->group(function () {
+    // Modes de paiement (public pour consultation)
+    Route::get('/payments/methods', [\App\Http\Controllers\Api\PaymentController::class, 'getMethods']);
+});
+
 // Protected authentication routes
 Route::middleware('auth:sanctum')->group(function () {
 
@@ -56,6 +62,42 @@ Route::middleware('auth:sanctum')->group(function () {
         // Dashboard principal
         Route::get('/dashboard', [\App\Http\Controllers\Api\PharmacyController::class, 'dashboard']);
         Route::get('/quick-stats', [\App\Http\Controllers\Api\PharmacyController::class, 'quickStats']);
+
+        // Note: Route payments/methods déplacée en public pour éviter redirection
+
+        // Gestion des assurances (Admin+ seulement)
+        Route::middleware('role:admin,superadmin,pharmacien')->group(function () {
+            Route::prefix('insurances')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\InsuranceController::class, 'index']);
+                Route::post('/', [\App\Http\Controllers\Api\InsuranceController::class, 'store']);
+                Route::get('/{insurance}', [\App\Http\Controllers\Api\InsuranceController::class, 'show']);
+                Route::put('/{insurance}', [\App\Http\Controllers\Api\InsuranceController::class, 'update']);
+                Route::delete('/{insurance}', [\App\Http\Controllers\Api\InsuranceController::class, 'destroy']);
+                Route::patch('/{insurance}/toggle-status', [\App\Http\Controllers\Api\InsuranceController::class, 'toggleStatus']);
+                Route::post('/{insurance}/calculate-reimbursement', [\App\Http\Controllers\Api\InsuranceController::class, 'calculateReimbursement']);
+            });
+        });
+
+        // Gestion des ordonnances (Pharmacien+ seulement)
+        Route::middleware('role:pharmacien,admin,superadmin')->group(function () {
+            Route::prefix('prescriptions')->group(function () {
+                Route::get('/stats', [\App\Http\Controllers\Api\PrescriptionController::class, 'getStats']);
+                Route::get('/products-by-type', [\App\Http\Controllers\Api\PrescriptionController::class, 'getProductsByType']);
+                Route::put('/products/{product}', [\App\Http\Controllers\Api\PrescriptionController::class, 'updateProductPrescription']);
+                Route::post('/products/bulk-update', [\App\Http\Controllers\Api\PrescriptionController::class, 'bulkUpdatePrescriptions']);
+                Route::post('/validate-sale/{product}', [\App\Http\Controllers\Api\PrescriptionController::class, 'validatePrescriptionForSale']);
+            });
+        });
+
+        // 🧾 Gestion des factures (Tous utilisateurs authentifiés)
+        Route::prefix('invoices')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\InvoiceController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\InvoiceController::class, 'store']);
+            Route::get('/stats', [\App\Http\Controllers\Api\InvoiceController::class, 'stats']);
+            Route::get('/{invoice}', [\App\Http\Controllers\Api\InvoiceController::class, 'show']);
+            Route::get('/{invoice}/pdf', [\App\Http\Controllers\Api\InvoiceController::class, 'generatePDF'])
+                ->name('api.invoices.pdf');
+        });
     });
 
     // Stock Management Routes (Protected)
