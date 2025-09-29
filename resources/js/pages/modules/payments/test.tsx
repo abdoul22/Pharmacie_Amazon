@@ -18,7 +18,7 @@ const PaymentsTestPage: React.FC = () => {
         <h2 className="text-xl font-semibold">Tests de Navigation :</h2>
         
         <div className="grid grid-cols-2 gap-4">
-          <Link to="/app/dashboard" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-center block">
+          <Link to="/app/pharmacy" className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-center block">
             Dashboard
           </Link>
           <Link to="/app/stock" className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-center block">

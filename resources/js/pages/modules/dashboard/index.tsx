@@ -10,7 +10,15 @@ import {
   Users, 
   DollarSign,
   Calendar,
-  ShoppingCart
+  ShoppingCart,
+  UserCog,
+  Settings,
+  Shield,
+  BarChart3,
+  FileText,
+  CreditCard,
+  Truck,
+  Pill
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import NavigationSimple from '@/components/NavigationSimple';
@@ -133,14 +141,156 @@ const PharmacyDashboardPage: React.FC = () => {
 
   const { overview, alerts, recent_movements, top_products, quick_actions } = dashboardData;
 
+  // Définir les modules selon le rôle
+  const getRoleModules = () => {
+    const baseModules = [
+      {
+        title: 'Gestion Stock',
+        description: 'Gérer les produits et le stock',
+        icon: Package,
+        color: 'bg-blue-500',
+        link: '/app/stock',
+        stats: `${overview.total_products} produits`
+      },
+      {
+        title: 'Ventes',
+        description: 'Point de vente et historique',
+        icon: ShoppingCart,
+        color: 'bg-green-500',
+        link: '/app/sales',
+        stats: 'Point de vente'
+      }
+    ];
+
+    // Modules spécifiques selon le rôle
+    switch (user?.role) {
+      case 'superadmin':
+        return [
+          {
+            title: 'Gestion Utilisateurs',
+            description: 'Approuver, créer et gérer tous les comptes',
+            icon: UserCog,
+            color: 'bg-purple-500',
+            link: '/app/user-management',
+            stats: 'Gestion complète'
+          },
+          {
+            title: 'Configuration Système',
+            description: 'Paramètres avancés et configuration',
+            icon: Settings,
+            color: 'bg-gray-600',
+            link: '/app/admin/system-config',
+            stats: 'Configuration'
+          },
+          ...baseModules
+        ];
+      
+      case 'admin':
+        return [
+          {
+            title: 'Rapports & Analytics',
+            description: 'Tableaux de bord et analyses',
+            icon: BarChart3,
+            color: 'bg-indigo-500',
+            link: '/app/reports',
+            stats: 'Analyses'
+          },
+          {
+            title: 'Configuration',
+            description: 'Paramètres de l\'application',
+            icon: Settings,
+            color: 'bg-gray-600',
+            link: '/app/admin/config',
+            stats: 'Paramètres'
+          },
+          ...baseModules
+        ];
+      
+      case 'pharmacien':
+        return [
+          {
+            title: 'Prescriptions',
+            description: 'Gérer les ordonnances',
+            icon: FileText,
+            color: 'bg-red-500',
+            link: '/app/prescriptions',
+            stats: 'Ordonnances'
+          },
+          {
+            title: 'Produits Pharmaceutiques',
+            description: 'Gestion des médicaments',
+            icon: Pill,
+            color: 'bg-blue-600',
+            link: '/app/products',
+            stats: 'Médicaments'
+          },
+          ...baseModules
+        ];
+      
+      case 'vendeur':
+        return [
+          {
+            title: 'Point de Vente',
+            description: 'Interface de vente',
+            icon: ShoppingCart,
+            color: 'bg-green-500',
+            link: '/app/sales/pos',
+            stats: 'Ventes'
+          },
+          {
+            title: 'Clients',
+            description: 'Gestion des clients',
+            icon: Users,
+            color: 'bg-cyan-500',
+            link: '/app/customers',
+            stats: 'Clients'
+          },
+          ...baseModules
+        ];
+      
+      case 'caissier':
+        return [
+          {
+            title: 'Paiements',
+            description: 'Gérer les paiements et encaissements',
+            icon: CreditCard,
+            color: 'bg-yellow-500',
+            link: '/app/payments',
+            stats: 'Paiements'
+          },
+          {
+            title: 'Rapports Financiers',
+            description: 'Rapports de caisse',
+            icon: BarChart3,
+            color: 'bg-indigo-500',
+            link: '/app/reports/financial',
+            stats: 'Finances'
+          },
+          ...baseModules
+        ];
+      
+      default:
+        return baseModules;
+    }
+  };
+
+  const roleModules = getRoleModules();
+
+
   return (
     <div className="p-6 space-y-6">
       {/* En-tête */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard Pharmacie</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Dashboard {user?.role === 'superadmin' ? 'SuperAdmin' : 
+                     user?.role === 'admin' ? 'Administration' :
+                     user?.role === 'pharmacien' ? 'Pharmacien' :
+                     user?.role === 'vendeur' ? 'Vendeur' :
+                     user?.role === 'caissier' ? 'Caissier' : 'Pharmacie'}
+          </h1>
           <p className="text-muted-foreground">
-            Bienvenue {user?.name} ({user?.role}) - {dashboardData.last_updated}
+            Bienvenue {user?.name} - {dashboardData.last_updated}
           </p>
         </div>
         <Button onClick={refresh} variant="outline" size="sm">
@@ -204,27 +354,35 @@ const PharmacyDashboardPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Actions rapides */}
+      {/* Modules selon le rôle */}
       <Card>
         <CardHeader>
-          <CardTitle>Actions Rapides</CardTitle>
-          <CardDescription>Accès direct aux fonctionnalités principales</CardDescription>
+          <CardTitle>Modules Disponibles</CardTitle>
+          <CardDescription>Fonctionnalités adaptées à votre rôle</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {quick_actions.map((action) => (
-              <Link key={action.id} to={action.route}>
-                <Button 
-                  variant="outline" 
-                  className={`w-full justify-start h-auto p-4 ${action.color}`}
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <Package className="h-6 w-6 mb-2" />
-                    <span className="text-sm font-medium">{action.label}</span>
-                  </div>
-                </Button>
-              </Link>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {roleModules.map((module, index) => {
+              const IconComponent = module.icon;
+              return (
+                <Link key={index} to={module.link}>
+                  <Card className="hover:shadow-md transition-shadow cursor-pointer">
+                    <CardContent className="p-4">
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-lg ${module.color} text-white`}>
+                          <IconComponent className="h-6 w-6" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-sm">{module.title}</h3>
+                          <p className="text-xs text-muted-foreground">{module.description}</p>
+                          <p className="text-xs font-medium text-primary mt-1">{module.stats}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

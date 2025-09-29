@@ -1,0 +1,21 @@
+// Routes frontend
+export const home = () => '/';
+export const login = () => '/auth/login';
+export const register = () => '/auth/register';
+export const logout = () => '/auth/logout';
+export const dashboard = () => '/app/pharmacy';
+export const pharmacy = () => '/app/pharmacy';
+export const userManagement = () => '/app/user-management';
+export const stock = () => '/app/stock';
+export const sales = () => '/app/sales';
+export const payments = () => '/app/payments';
+export const products = () => '/app/products';
+export const categories = () => '/app/categories';
+export const suppliers = () => '/app/suppliers';
+export const prescriptions = () => '/app/prescriptions';
+export const insurance = () => '/app/insurance';
+export const movements = () => '/app/movements';
+export const settings = () => '/app/settings';
+export const profile = () => '/app/settings/profile';
+export const password = () => '/app/settings/password';
+export const appearance = () => '/app/settings/appearance';

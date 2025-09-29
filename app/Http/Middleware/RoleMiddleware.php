@@ -25,7 +25,7 @@ class RoleMiddleware
             ], 401);
         }
 
-        if (!in_array($user->role, $roles)) {
+        if (!$user->hasRole($roles[0])) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden - Insufficient permissions'

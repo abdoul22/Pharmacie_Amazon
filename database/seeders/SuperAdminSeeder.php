@@ -14,24 +14,11 @@ class SuperAdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Check if superadmin already exists
-        if (User::where('role', 'superadmin')->exists()) {
-            $this->command->info('SuperAdmin already exists.');
-            return;
-        }
-
-        // Create superadmin user
-        $superadmin = User::create([
-            'name' => 'Super Administrateur',
-            'email' => 'superadmin@pharmacie.com',
-            'password' => Hash::make('SuperAdmin123!'),
-            'role' => 'superadmin',
-            'email_verified_at' => now(),
-        ]);
-
-        $this->command->info('SuperAdmin created successfully:');
-        $this->command->info('Email: superadmin@pharmacie.com');
-        $this->command->info('Password: SuperAdmin123!');
-        $this->command->warn('Please change the password after first login.');
+        // Ce seeder ne crée plus de SuperAdmin automatiquement
+        // Le SuperAdmin doit être créé manuellement via Tinker pour des raisons de sécurité
+        $this->command->info('SuperAdminSeeder désactivé pour des raisons de sécurité.');
+        $this->command->info('Utilisez la commande Tinker pour créer le SuperAdmin:');
+        $this->command->info('php artisan tinker');
+        $this->command->info('Voir la documentation dans README.md');
     }
 }

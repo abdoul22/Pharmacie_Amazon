@@ -61,7 +61,10 @@ export default function Login() {
       });
       
       if (success) {
+        console.log('Login successful, redirecting to /app/pharmacy');
         navigate('/app/pharmacy');
+      } else {
+        console.log('Login failed');
       }
     } catch (err: any) {
       setErrors({ general: err.message || 'Erreur de connexion' });

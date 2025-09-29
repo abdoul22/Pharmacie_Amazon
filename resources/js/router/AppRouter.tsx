@@ -48,8 +48,15 @@ import MovementsIndexPage from '../pages/modules/movements/index';
 import InsuranceIndexPage from '../pages/modules/insurance/index';
 import PrescriptionsIndexPage from '../pages/modules/prescriptions/index';
 
+// User Management
+import UserManagement from '../pages/user-management/UserManagement';
+
+// Test Page
+import TestPage from '../pages/TestPage';
+
 // Contexts et hooks
 import { AuthProvider, useAuthContext } from '../contexts/AuthContextSimple';
+import SessionManager from '../components/SessionManager';
 
 // Route Guard pour les pages protégées
 interface ProtectedRouteProps {
@@ -57,9 +64,9 @@ interface ProtectedRouteProps {
   requiredRoles?: string[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRoles = [] 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRoles = []
 }) => {
   const { isAuthenticated, isLoading, hasAnyRole } = useAuthContext();
 
@@ -103,7 +110,7 @@ const AuthOnlyRoute: React.FC<AuthOnlyRouteProps> = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/app/pharmacy" replace />;
   }
 
   return <>{children}</>;
@@ -122,7 +129,7 @@ const AppRouterContent: React.FC = () => {
             {/* Routes d'authentification avec shadcn/ui */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
-            
+
             {/* Route de debug */}
             <Route path="/debug/auth" element={<DebugAuthPage />} />
 
@@ -137,67 +144,114 @@ const AppRouterContent: React.FC = () => {
             <AppLayout />
           </ProtectedRoute>
         }>
-          {/* Dashboard général - placeholder */}
-          <Route path="dashboard" element={
-            <div className="p-6">
-              <h1 className="text-3xl font-bold">📊 Dashboard</h1>
-              <p>Dashboard principal en développement</p>
-            </div>
+          {/* Redirection par défaut vers le dashboard pharmacie */}
+          <Route index element={<Navigate to="pharmacy" replace />} />
+
+          {/* 🏥 MODULE PHARMACIE - Dashboard principal avec gestion des rôles */}
+          <Route path="pharmacy" element={<PharmacyDashboardPage />} />
+
+          {/* 👥 Gestion des Utilisateurs (SuperAdmin uniquement) */}
+          <Route path="user-management" element={
+            <ProtectedRoute requiredRoles={['superadmin']}>
+              <UserManagement />
+            </ProtectedRoute>
           } />
 
-          {/* 🏥 MODULE PHARMACIE - Structure CRUD */}
-          
-          {/* Dashboard pharmacie */}
-          <Route path="pharmacy" element={<PharmacyDashboardPage />} />
-          
-          {/* 💳 Module Paiements */}
+          {/* 🧪 Page de Test */}
+          <Route path="test" element={<TestPage />} />
+
+          {/* 💳 Module Paiements - accès Admin+ */}
           <Route path="payments">
-            <Route index element={<PaymentsIndexPage />} />
-            <Route path="create" element={<PaymentsCreatePage />} />
-            <Route path=":id" element={<PaymentsShowPage />} />
-            <Route path=":id/edit" element={<PaymentsEditPage />} />
+            <Route index element={
+              <ProtectedRoute requiredRoles={["admin", "superadmin"]}>
+                <PaymentsIndexPage />
+              </ProtectedRoute>
+            } />
+            <Route path="create" element={
+              <ProtectedRoute requiredRoles={["admin", "superadmin"]}>
+                <PaymentsCreatePage />
+              </ProtectedRoute>
+            } />
+            <Route path=":id" element={
+              <ProtectedRoute requiredRoles={["admin", "superadmin"]}>
+                <PaymentsShowPage />
+              </ProtectedRoute>
+            } />
+            <Route path=":id/edit" element={
+              <ProtectedRoute requiredRoles={["admin", "superadmin"]}>
+                <PaymentsEditPage />
+              </ProtectedRoute>
+            } />
           </Route>
-          
-          {/* 🛒 Module Ventes - Point de Vente */}
+
+          {/* 🛒 Module Ventes - accès Vendeur/Caissier/Admin/SuperAdmin */}
           <Route path="sales">
-            <Route index element={<SalesIndexPage />} />
-            <Route path="pos" element={<POSPage />} />
-            <Route path="history" element={<SalesHistoryPage />} />
-            {/* TODO: Ajouter returns, reports */}
+            <Route index element={
+              <ProtectedRoute requiredRoles={["vendeur", "caissier", "admin", "superadmin"]}>
+                <SalesIndexPage />
+              </ProtectedRoute>
+            } />
+            <Route path="pos" element={
+              <ProtectedRoute requiredRoles={["vendeur", "caissier", "admin", "superadmin"]}>
+                <POSPage />
+              </ProtectedRoute>
+            } />
+            <Route path="history" element={
+              <ProtectedRoute requiredRoles={["vendeur", "caissier", "admin", "superadmin"]}>
+                <SalesHistoryPage />
+              </ProtectedRoute>
+            } />
+            {/* TODO: returns, reports avec protection */}
           </Route>
-          
-          {/* 📦 Module Stock */}
+
+          {/* 📦 Module Stock - accès Pharmacien/Admin/SuperAdmin */}
           <Route path="stock">
-            <Route index element={<StockIndexPage />} />
-            <Route path="create" element={<StockCreatePage />} />
-            <Route path=":id" element={<StockShowPage />} />
-            <Route path=":id/edit" element={<StockEditPage />} />
+            <Route index element={
+              <ProtectedRoute requiredRoles={["pharmacien", "admin", "superadmin"]}>
+                <StockIndexPage />
+              </ProtectedRoute>
+            } />
+            <Route path="create" element={
+              <ProtectedRoute requiredRoles={["pharmacien", "admin", "superadmin"]}>
+                <StockCreatePage />
+              </ProtectedRoute>
+            } />
+            <Route path=":id" element={
+              <ProtectedRoute requiredRoles={["pharmacien", "admin", "superadmin"]}>
+                <StockShowPage />
+              </ProtectedRoute>
+            } />
+            <Route path=":id/edit" element={
+              <ProtectedRoute requiredRoles={["pharmacien", "admin", "superadmin"]}>
+                <StockEditPage />
+              </ProtectedRoute>
+            } />
           </Route>
-          
+
           {/* 📂 Module Catégories */}
           <Route path="categories">
             <Route index element={<CategoriesIndexPage />} />
             {/* TODO: Ajouter create, show, edit */}
           </Route>
-          
+
           {/* 🚚 Module Fournisseurs */}
           <Route path="suppliers">
             <Route index element={<SuppliersIndexPage />} />
             {/* TODO: Ajouter create, show, edit */}
           </Route>
-          
+
           {/* 💊 Module Produits */}
           <Route path="products">
             <Route index element={<ProductsIndexPage />} />
             {/* TODO: Ajouter create, show, edit */}
           </Route>
-          
+
           {/* 📊 Module Mouvements */}
           <Route path="movements">
             <Route index element={<MovementsIndexPage />} />
             {/* TODO: Ajouter create, show, edit */}
           </Route>
-          
+
           {/* 🛡️ Module Assurances (Admin+ seulement) */}
           <Route path="insurance">
             <Route index element={
@@ -207,7 +261,7 @@ const AppRouterContent: React.FC = () => {
             } />
             {/* TODO: Ajouter create, show, edit avec protection */}
           </Route>
-          
+
           {/* 📋 Module Prescriptions (Pharmacien+ seulement) */}
           <Route path="prescriptions">
             <Route index element={
@@ -217,13 +271,12 @@ const AppRouterContent: React.FC = () => {
             } />
             {/* TODO: Ajouter create, show, edit avec protection */}
           </Route>
-          
+
           {/* Redirection par défaut */}
           <Route index element={<Navigate to="pharmacy" replace />} />
         </Route>
 
         {/* Routes compatibilité (redirection vers /app) */}
-        <Route path="/dashboard" element={<Navigate to="/app/pharmacy" replace />} />
         <Route path="/settings/*" element={<Navigate to="/app/settings/profile" replace />} />
 
         {/* Route 404 */}
@@ -232,8 +285,8 @@ const AppRouterContent: React.FC = () => {
             <div className="text-center">
               <h1 className="text-6xl font-bold text-gray-900 dark:text-gray-100">404</h1>
               <p className="text-xl text-gray-600 dark:text-gray-400 mt-4">Page non trouvée</p>
-              <a 
-                href="/app/dashboard" 
+              <a
+                href="/app/pharmacy"
                 className="mt-4 inline-block px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 Retour au tableau de bord
@@ -247,12 +300,20 @@ const AppRouterContent: React.FC = () => {
 };
 
 /**
- * Router principal avec AuthProvider
+ * Router principal avec AuthProvider et SessionManager
  */
 const AppRouter: React.FC = () => {
   return (
     <AuthProvider>
-      <AppRouterContent />
+      <SessionManager
+        config={{
+          inactivityTimeoutMinutes: 60, // 1 heure d'inactivité
+          warningTimeoutMinutes: 5,     // 5 minutes d'avertissement
+          disabled: false,              // Activer le gestionnaire
+        }}
+      >
+        <AppRouterContent />
+      </SessionManager>
     </AuthProvider>
   );
 };

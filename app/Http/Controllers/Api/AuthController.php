@@ -60,9 +60,27 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         try {
-            $request->authenticate();
+            // Validation manuelle des credentials
+            $credentials = $request->only('email', 'password');
+
+            if (!Auth::attempt($credentials, $request->boolean('remember'))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid credentials'
+                ], 401);
+            }
 
             $user = Auth::user();
+
+            // Vérifier que l'utilisateur est approuvé
+            if (!$user->is_approved) {
+                Auth::logout();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Votre compte n\'est pas encore approuvé par l\'administrateur'
+                ], 403);
+            }
+
             $token = $user->createToken('auth-token')->plainTextToken;
 
             return response()->json([
@@ -130,7 +148,7 @@ class AuthController extends Controller
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'role' => $user->role,
+                        'role' => $user->role, // Accessor qui retourne le nom du rôle
                         'permissions' => PermissionService::getUserPermissions($user),
                         'email_verified_at' => $user->email_verified_at,
                         'created_at' => $user->created_at,

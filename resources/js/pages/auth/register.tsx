@@ -13,7 +13,6 @@ interface RegisterFormData {
   email: string;
   password: string;
   password_confirmation: string;
-  role: string;
 }
 
 interface ValidationErrors {
@@ -21,67 +20,55 @@ interface ValidationErrors {
   email?: string;
   password?: string;
   password_confirmation?: string;
-  role?: string;
   general?: string;
 }
 
 export default function Register() {
   const navigate = useNavigate();
-  
+
   const [formData, setFormData] = useState<RegisterFormData>({
     name: '',
     email: '',
     password: '',
     password_confirmation: '',
-    role: 'vendeur', // Rôle par défaut
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const roleOptions = [
-    { value: 'vendeur', label: 'Vendeur' },
-    { value: 'caissier', label: 'Caissier' },
-    { value: 'pharmacien', label: 'Pharmacien' },
-    { value: 'admin', label: 'Administrateur' },
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
     setSuccess(false);
-    
+
     // Validation
     const newErrors: ValidationErrors = {};
-    
+
     if (!formData.name.trim()) {
       newErrors.name = 'Le nom est requis';
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'L\'email est requis';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Format d\'email invalide';
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Le mot de passe est requis';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Le mot de passe doit contenir au moins 6 caractères';
     }
-    
+
     if (formData.password !== formData.password_confirmation) {
       newErrors.password_confirmation = 'Les mots de passe ne correspondent pas';
     }
-    
-    if (!formData.role) {
-      newErrors.role = 'Le rôle est requis';
-    }
-    
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsLoading(false);
@@ -91,19 +78,19 @@ export default function Register() {
     try {
       // TODO: Connecter avec l'API Laravel
       console.log('Register attempt:', formData);
-      
+
       // Simulation d'appel API
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setSuccess(true);
-      
+
       // Redirection après succès
       setTimeout(() => {
-        navigate('/auth/login', { 
+        navigate('/auth/login', {
           state: { message: 'Inscription réussie ! Votre compte est en attente d\'approbation.' }
         });
       }, 2000);
-      
+
     } catch (err: any) {
       setErrors({ general: err.message || 'Erreur lors de l\'inscription' });
     } finally {
@@ -164,7 +151,7 @@ export default function Register() {
               Remplissez le formulaire pour créer votre compte
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Erreur générale */}
@@ -209,29 +196,6 @@ export default function Register() {
                 )}
               </div>
 
-              {/* Rôle */}
-              <div className="space-y-2">
-                <Label htmlFor="role">Rôle demandé</Label>
-                <Select 
-                  value={formData.role} 
-                  onValueChange={(value) => handleInputChange('role', value)}
-                  disabled={isLoading}
-                >
-                  <SelectTrigger className={errors.role ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Sélectionnez un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.role && (
-                  <p className="text-sm text-red-600">{errors.role}</p>
-                )}
-              </div>
 
               {/* Password */}
               <div className="space-y-2">
@@ -300,9 +264,9 @@ export default function Register() {
               </div>
 
               {/* Submit Button */}
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isLoading}
                 size="lg"
               >
@@ -320,8 +284,8 @@ export default function Register() {
               <div className="text-center text-sm">
                 <div className="flex items-center justify-center space-x-1">
                   <span className="text-gray-600">Déjà un compte ?</span>
-                  <Link 
-                    to="/auth/login" 
+                  <Link
+                    to="/auth/login"
                     className="text-purple-600 hover:text-purple-800 underline font-medium"
                   >
                     Se connecter
@@ -338,7 +302,7 @@ export default function Register() {
             <div className="text-center text-sm text-amber-800">
               <p className="font-semibold mb-2">ℹ️ Information importante</p>
               <p>
-                Votre compte sera en attente d'approbation par un administrateur après inscription.
+                Votre compte sera en attente d'approbation par un SuperAdmin après inscription. Le rôle vous sera attribué lors de l'approbation.
               </p>
             </div>
           </CardContent>
@@ -346,8 +310,8 @@ export default function Register() {
 
         {/* Footer */}
         <div className="text-center">
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             className="text-gray-600 hover:text-gray-800 text-sm underline"
           >
             ← Retour à l'accueil

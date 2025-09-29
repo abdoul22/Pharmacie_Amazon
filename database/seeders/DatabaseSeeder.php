@@ -20,47 +20,8 @@ class DatabaseSeeder extends Seeder
             InsuranceSeeder::class,
         ]);
 
-        // Create test users for development
-        if (app()->environment('local')) {
-            User::firstOrCreate(
-                ['email' => 'admin@pharmacie.com'],
-                [
-                    'name' => 'Admin Test',
-                    'password' => Hash::make('password'),
-                    'role' => 'admin',
-                    'email_verified_at' => now(),
-                ]
-            );
-
-            User::firstOrCreate(
-                ['email' => 'vendeur@pharmacie.com'],
-                [
-                    'name' => 'Vendeur Test',
-                    'password' => Hash::make('password'),
-                    'role' => 'vendeur',
-                    'email_verified_at' => now(),
-                ]
-            );
-
-            User::firstOrCreate(
-                ['email' => 'caissier@pharmacie.com'],
-                [
-                    'name' => 'Caissier Test',
-                    'password' => Hash::make('password'),
-                    'role' => 'caissier',
-                    'email_verified_at' => now(),
-                ]
-            );
-
-            User::firstOrCreate(
-                ['email' => 'pharmacien@pharmacie.com'],
-                [
-                    'name' => 'Pharmacien Test',
-                    'password' => Hash::make('password'),
-                    'role' => 'pharmacien',
-                    'email_verified_at' => now(),
-                ]
-            );
-        }
+        // Note: Les utilisateurs de test ont été supprimés
+        // Le SuperAdmin doit être créé manuellement via Tinker pour des raisons de sécurité
+        // Voir la documentation dans README.md pour la procédure
     }
 }

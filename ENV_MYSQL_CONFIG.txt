@@ -1,0 +1,29 @@
+# Configuration MySQL pour votre fichier .env
+# Remplacez votre section base de données actuelle par celle-ci :
+
+# Base de données MySQL
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=pharmacie_digitale
+DB_USERNAME=root
+DB_PASSWORD=
+
+# Sessions (recommandé pour MySQL)
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+# Cache (recommandé pour MySQL)
+CACHE_STORE=database
+CACHE_PREFIX=
+
+# Queue (recommandé pour MySQL)
+QUEUE_CONNECTION=database
+
+# Configuration de sécurité
+SESSION_INACTIVITY_TIMEOUT=60
+MAX_LOGIN_ATTEMPTS=5
+LOGIN_LOCKOUT_DURATION=15

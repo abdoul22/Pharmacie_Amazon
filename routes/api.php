@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\UserManagementController;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\PermissionMiddleware;
 use Illuminate\Http\Request;
@@ -43,7 +44,7 @@ Route::prefix('pharmacy')->group(function () {
 });
 
 // Protected authentication routes
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
 
     // Authentication routes
     Route::prefix('auth')->group(function () {
@@ -55,6 +56,16 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/roles', [AuthController::class, 'roles']);
             Route::put('/users/{user}/role', [AuthController::class, 'updateUserRole']);
         });
+    });
+
+    // 👥 User Management API (SuperAdmin only)
+    Route::middleware('role:superadmin')->prefix('user-management')->group(function () {
+        Route::get('/users', [UserManagementController::class, 'index']);
+        Route::get('/roles', [UserManagementController::class, 'getAvailableRoles']);
+        Route::post('/users/{user}/approve', [UserManagementController::class, 'approveUser']);
+        Route::post('/users/{user}/suspend', [UserManagementController::class, 'suspendUser']);
+        Route::put('/users/{user}/role', [UserManagementController::class, 'changeUserRole']);
+        Route::delete('/users/{user}', [UserManagementController::class, 'deleteUser']);
     });
 
     // 🏥 Pharmacy Management API

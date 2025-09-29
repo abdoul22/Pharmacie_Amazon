@@ -21,6 +21,62 @@ L'authentification avec gestion des rôles est **complètement implémentée** e
 
 Le système de gestion des stocks avec **traçabilité par lots pharmaceutiques** est **complètement implémenté** et **fonctionnel**.
 
+### ✅ Étape 3 : Sécurité & Dashboards Basés sur les Rôles (TERMINÉE)
+
+#### 🔒 **Déconnexion Automatique par Inactivité**
+
+- **Auto-logout après 1 heure** d'inactivité (configurable)
+- **Tracker d'activité intelligent** : détection mouvement souris, clavier, tactile, défilement
+- **Modal d'avertissement** 5 minutes avant déconnexion avec compte à rebours
+- **Nettoyage sécurisé** des données sensibles lors de la déconnexion
+- **Protection double** : middleware Laravel + tracker React
+- **Configuration flexible** via variables d'environnement
+
+#### 👥 **Dashboards Dédiés par Rôle**
+
+**5 dashboards spécialisés** avec interfaces parfaitement adaptées :
+
+- **🛡️ SuperAdmin Dashboard** - Contrôle total système
+    - Administration système (approbation comptes, sauvegardes, monitoring)
+    - Vue financière globale et tous modules métier
+    - Alertes critiques système et sécurité
+
+- **👨‍💼 Admin Dashboard** - Gestion opérationnelle avancée
+    - Gestion équipe, objectifs commerciaux, stock global
+    - Rapports et analytics, relations fournisseurs
+    - Supervision sans fonctions ultra-sensibles
+
+- **💊 Pharmacien Dashboard** - Supervision pharmaceutique
+    - Validation ordonnances, substances contrôlées
+    - Interactions médicamenteuses, conseil pharmaceutique
+    - Conformité réglementaire, formation continue
+
+- **🛒 Vendeur Dashboard** - Ventes et relation client
+    - Point de vente tactile, gestion clientèle
+    - Objectifs personnels, programme fidélité
+    - Performance et commission individuelle
+
+- **💰 Caissier Dashboard** - Paiements et encaissements
+    - Hub paiements 7 modes mauritaniens
+    - Paiements fractionnés, gestion crédits
+    - Caisse et réconciliation, contrôles financiers
+
+#### 🔐 **Système de Permissions Granulaires**
+
+- **Hook usePermissions** avec vérifications granulaires
+- **PermissionGuard** pour protection des routes
+- **Routage conditionnel** automatique selon le rôle
+- **Messages contextuels** adaptés à chaque utilisateur
+
+#### 👥 **Module Gestion des Utilisateurs (SuperAdmin)**
+
+- **Interface d'approbation** des nouveaux comptes
+- **Attribution des rôles** lors de l'approbation
+- **Gestion complète** : suspension, changement de rôle, suppression
+- **Workflow sécurisé** : inscription → approbation SuperAdmin → attribution rôle → accès
+- **Tableau de bord** avec statistiques et filtres avancés
+- **Logs d'audit** pour toutes les actions administratives
+
 ## 💊 **Concept Fondamental : Gestion des Lots Pharmaceutiques**
 
 ### 🔄 **Workflow Commande → Lot → Stock**
@@ -194,13 +250,16 @@ sequenceDiagram
     S->>S: Décrémente quantité lot
 ```
 
-#### 🔐 Fonctionnalités d'Authentification
+#### 🔐 Fonctionnalités d'Authentification & Sécurité
 
 - **Inscription** (`POST /api/auth/register`)
 - **Connexion** (`POST /api/auth/login`)
 - **Déconnexion** (`POST /api/auth/logout`)
 - **Profil utilisateur** (`GET /api/auth/user`)
 - **Gestion des rôles** (`GET /api/auth/roles`, `PUT /api/auth/users/{id}/role`)
+- **🔒 Déconnexion automatique** après 1h d'inactivité (configurable)
+- **🛡️ Protection des routes** basée sur les permissions
+- **👥 Dashboards spécialisés** pour chaque rôle utilisateur
 
 #### 📦 Fonctionnalités de Stock & Gestion des Lots
 
@@ -214,17 +273,32 @@ sequenceDiagram
 - **Traçabilité complète** : Produit → Lot → Fournisseur → Date d'expiration
 - **Recherche et filtres** avancés (par code-barres, lot, DLC, fournisseur)
 
-#### 👥 Rôles & Permissions (4 rôles)
+#### 👥 Rôles & Permissions (5 rôles) - Dashboards Dédiés
 
-| Rôle           | Permissions                                                    | Dashboard             |
-| -------------- | -------------------------------------------------------------- | --------------------- |
-| **superadmin** | Tous les droits, approbation comptes, backup/restore           | 🔧 Admin complet      |
-| **admin**      | Gestion utilisateurs, produits, stocks, rapports               | 📊 Gestion avancée    |
-| **pharmacien** | Validation ordonnances, médicaments contrôlés, supervision     | 💊 Pharmaceutique     |
-| **vendeur**    | Ventes, libération médicaments, préparation commandes, retours | 🛒 Point de vente     |
-| **caissier**   | Encaissements, remboursements, validation paiements            | 💰 Caisse & Paiements |
+| Rôle           | Niveau | Permissions                                                  | Dashboard Spécialisé          |
+| -------------- | ------ | ------------------------------------------------------------ | ----------------------------- |
+| **superadmin** | 1      | Accès total, approbation comptes, administration système     | 🛡️ Contrôle système complet   |
+| **admin**      | 2      | Gestion équipe, stock global, rapports avancés               | 👨‍💼 Gestion opérationnelle     |
+| **pharmacien** | 3      | Ordonnances, substances contrôlées, conformité médicale      | 💊 Supervision pharmaceutique |
+| **vendeur**    | 3      | Ventes, clientèle, objectifs, point de vente tactile         | 🛒 Ventes & relation client   |
+| **caissier**   | 4      | Paiements fractionnés, crédits, caisse, 7 modes mauritaniens | 💰 Encaissements & Paiements  |
 
-**Workflow d'activation** : Inscription libre → Approbation superadmin → Accès effectif
+**Workflow d'activation** : Inscription libre → Approbation SuperAdmin → Attribution rôle → Accès effectif
+
+#### 🔄 **Nouveau Workflow d'Inscription & Approbation**
+
+```mermaid
+graph TD
+    A[Utilisateur s'inscrit] --> B[Compte créé sans rôle]
+    B --> C[is_approved = false]
+    C --> D[Utilisateur bloqué]
+    D --> E[SuperAdmin voit notification]
+    E --> F[SuperAdmin choisit rôle]
+    F --> G[Approbation + Attribution rôle]
+    G --> H[is_approved = true]
+    H --> I[Utilisateur peut se connecter]
+    I --> J[Redirection vers dashboard approprié]
+```
 
 #### 🔧 **Création du SuperAdmin (SÉCURITÉ)**
 
@@ -233,14 +307,20 @@ sequenceDiagram
 ```bash
 # Créer le premier SuperAdmin via Tinker
 php artisan tinker
+```
 
-# Dans Tinker :
+Puis exécutez :
+
+```php
+// Récupérer le rôle superadmin
+$superadminRole = \App\Models\Role::where('name', 'superadmin')->first();
+
+// Créer l'utilisateur superadmin
 $user = \App\Models\User::create([
     'name' => 'Super Admin',
     'email' => 'admin@pharmacie.com',
     'password' => \Hash::make('SuperAdmin123!'),
-    'role' => 'superadmin',
-    'email_verified_at' => now(),
+    'role_id' => $superadminRole->id,
     'is_approved' => true
 ]);
 
@@ -248,48 +328,130 @@ echo "SuperAdmin créé : " . $user->email;
 exit
 ```
 
-#### 📋 **Workflow d'Approbation des Utilisateurs**
+#### 📋 **Interface Gestion des Utilisateurs (SuperAdmin)**
 
-```mermaid
-graph TD
-    A[Utilisateur s'inscrit] --> B[Compte créé avec is_approved=false]
-    B --> C[Utilisateur ne peut pas se connecter]
-    C --> D[SuperAdmin voit liste utilisateurs en attente]
-    D --> E[SuperAdmin approuve le compte]
-    E --> F[is_approved=true]
-    F --> G[Utilisateur peut maintenant se connecter]
-```
+**Fonctionnalités disponibles :**
+
+- **📊 Tableau de bord** : Statistiques globales (total, en attente, par rôle)
+- **🔍 Recherche & Filtres** : Par nom, email, statut, rôle
+- **✅ Approbation** : Attribution du rôle lors de l'approbation
+- **⚙️ Gestion des rôles** : Changement de rôle pour utilisateurs actifs
+- **🚫 Suspension** : Désactivation temporaire avec raison
+- **🗑️ Suppression** : Suppression définitive (avec protection)
+- **📝 Logs d'audit** : Traçabilité complète des actions
 
 #### 🔑 Comptes de Test
 
-```
+````
 SuperAdmin (créé via Tinker uniquement):
 - Email: admin@pharmacie.com
 - Password: SuperAdmin123!
 - Statut: is_approved=true (automatique)
 
 Autres utilisateurs (via inscription web):
-- Peuvent s'inscrire librement sur /register
-- Statut initial: is_approved=false
-- Accès bloqué jusqu'à approbation SuperAdmin
+- Peuvent s'inscrire librement sur /register (sans sélection de rôle)
+- Statut initial: is_approved=false, role_id=null
+- Accès bloqué jusqu'à approbation SuperAdmin + attribution rôle
 
-Comptes de test pré-approuvés (seeding):
-Admin:
-- Email: admin@pharmacie.com
-- Password: password
+#### 🗄️ **Configuration Base de Données**
 
-Pharmacien:
-- Email: pharmacien@pharmacie.com
-- Password: password
+**Système de Rôles Avancé :**
+- Table `roles` séparée avec permissions granulaires
+- Relation `users.role_id` → `roles.id`
+- Système de niveaux hiérarchiques (1=superadmin, 2=admin, etc.)
+- Permissions stockées en JSON par rôle
 
-Vendeur:
-- Email: vendeur@pharmacie.com
-- Password: password
+**Configuration MySQL :**
+Voir le fichier `docs/DATABASE_CONFIGURATION.md` pour la configuration complète.
 
-Caissier:
-- Email: caissier@pharmacie.com
-- Password: password
+**Migration des données :**
+Les migrations migrent automatiquement les rôles existants vers le nouveau système.
+
+**⚠️ Note :** Les utilisateurs de test ont été supprimés pour des raisons de sécurité.
+Tous les utilisateurs doivent maintenant être créés via l'interface SuperAdmin après approbation.
+
+## 🚀 **Prochaines Étapes Recommandées**
+
+### 1. **Configuration MySQL (Recommandé)**
+
+**Option A : Configuration Automatique**
+```bash
+# Script de configuration automatique
+php scripts/configure-mysql.php
+````
+
+**Option B : Configuration Manuelle**
+
+1. Modifiez votre fichier `.env` :
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=pharmacie_digitale
+DB_USERNAME=root
+DB_PASSWORD=votre_mot_de_passe
 ```
+
+2. Créez la base de données MySQL :
+
+```sql
+mysql -u root -p
+CREATE DATABASE pharmacie_digitale CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+EXIT;
+```
+
+### 2. **Migration et Vérification**
+
+```bash
+# Exécuter les migrations
+php artisan migrate
+
+# Vérifier la migration
+php scripts/migrate-to-mysql.php
+```
+
+### 3. **Création du SuperAdmin**
+
+```bash
+php artisan tinker
+```
+
+Puis :
+
+```php
+$superadminRole = \App\Models\Role::where('name', 'superadmin')->first();
+$user = \App\Models\User::create([
+    'name' => 'Super Admin',
+    'email' => 'admin@pharmacie.com',
+    'password' => \Hash::make('SuperAdmin123!'),
+    'role_id' => $superadminRole->id,
+    'is_approved' => true
+]);
+echo "SuperAdmin créé : " . $user->email;
+exit
+```
+
+### 4. **Test de l'Application**
+
+```bash
+# Démarrer le serveur
+php artisan serve
+
+# Tester l'accès
+# 1. Connectez-vous avec admin@pharmacie.com / SuperAdmin123!
+# 2. Accédez à /app/user-management
+# 3. Testez l'inscription d'un nouvel utilisateur
+# 4. Approuvez l'utilisateur avec attribution du rôle
+```
+
+### 5. **Documentation Complète**
+
+- **Migration SQLite → MySQL** : `docs/MIGRATION_SQLITE_TO_MYSQL.md`
+- **Configuration Base de Données** : `docs/DATABASE_CONFIGURATION.md`
+- **Configuration .env** : `docs/ENV_CONFIGURATION.md`
+
+````
 
 #### 🛡️ **Sécurité du Processus d'Approbation**
 
@@ -313,7 +475,7 @@ Route::middleware(['auth', 'approved'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index']);
     // Toutes les autres routes de l'application...
 });
-```
+````
 
 ## 🚀 Démarrage Rapide
 
@@ -557,6 +719,9 @@ Amazon/
 │   ├── features/            # User Stories & Acceptance Criteria
 │   ├── apis/               # Spécifications API REST
 │   └── decisions/          # Décisions techniques (ADR)
+├── docs/                    # 📚 Documentation avancée
+│   ├── AUTO_LOGOUT_CONFIGURATION.md  # Configuration déconnexion auto
+│   └── ROLE_BASED_DASHBOARDS.md     # Système dashboards par rôle
 ├── app/
 │   ├── Services/           # 🛠️ Services métier
 │   │   └── PermissionService.php
@@ -565,17 +730,33 @@ Amazon/
 │   │   │   └── AuthController.php
 │   │   ├── Middleware/
 │   │   │   ├── RoleMiddleware.php
-│   │   │   └── PermissionMiddleware.php
+│   │   │   ├── PermissionMiddleware.php
+│   │   │   └── SessionTimeoutMiddleware.php  # 🔒 Auto-logout
 │   │   └── Requests/Auth/
 │   │       ├── LoginRequest.php
 │   │       └── RegisterRequest.php
 │   └── Models/
 │       └── User.php        # 🔐 Modèle utilisateur + Sanctum
+├── resources/js/
+│   ├── pages/dashboards/   # 👥 Dashboards par rôle
+│   │   ├── SuperAdminDashboard.tsx
+│   │   ├── AdminDashboard.tsx
+│   │   ├── PharmacienDashboard.tsx
+│   │   ├── VendeurDashboard.tsx
+│   │   └── CaissierDashboard.tsx
+│   ├── components/
+│   │   ├── RoleDashboardRouter.tsx      # 🔄 Routage conditionnel
+│   │   ├── PermissionGuard.tsx          # 🛡️ Protection routes
+│   │   ├── SessionManager.tsx           # ⏰ Gestionnaire session
+│   │   └── InactivityWarningModal.tsx   # 🔔 Modal d'avertissement
+│   └── hooks/
+│       ├── usePermissions.ts            # 🔐 Hook permissions
+│       └── useActivityTracker.ts        # 📊 Tracker d'activité
 ├── database/
 │   ├── migrations/         # 🗄️ Migrations DB
 │   └── seeders/           # 🌱 Données initiales
 └── routes/
-    └── api.php            # 🛣️ Routes API REST
+    └── api.php            # 🛣️ Routes API REST + Middleware session
 ```
 
 ## 🧪 Tests
@@ -587,6 +768,17 @@ Amazon/
 - ✅ Gestion des rôles
 - ✅ Middleware de sécurité
 - ✅ Rate limiting
+- ✅ Session timeout middleware
+- ✅ Protection des routes par permissions
+
+### Tests Frontend
+
+- ✅ Dashboards par rôle (5 dashboards)
+- ✅ Routage conditionnel selon permissions
+- ✅ Système de déconnexion automatique
+- ✅ Tracker d'activité utilisateur
+- ✅ Modal d'avertissement d'inactivité
+- ✅ Hook de permissions granulaires
 
 ### Tests Unitaires
 
@@ -1665,8 +1857,10 @@ suppliers_orders: commandes fournisseurs
 
 - ✅ **Sanctum + offline tokens** avec rotation 4h
 - ✅ **Workflow d'approbation** comptes utilisateurs
-- ✅ **4 rôles RBAC** avec permissions granulaires
-- ✅ **Sessions sécurisées** + gestion déconnexion auto
+- ✅ **5 rôles RBAC** avec permissions granulaires hiérarchisées
+- ✅ **Sessions sécurisées** + déconnexion auto après 1h d'inactivité
+- ✅ **Dashboards dédiés** par rôle avec accès contrôlé
+- ✅ **Protection des routes** avec messages contextuels
 
 ### **Protection Données**
 
@@ -1689,6 +1883,9 @@ suppliers_orders: commandes fournisseurs
 - ✅ **Middleware d'approbation** : Vérification à chaque requête authentifiée
 - ✅ **Déconnexion automatique** : Si compte non approuvé détecté
 - ✅ **Messages d'erreur clairs** : Informe l'utilisateur du statut d'approbation
+- ✅ **Tracker d'activité intelligent** : Détection souris, clavier, tactile, défilement
+- ✅ **Modal d'avertissement** : 5 minutes avant déconnexion automatique
+- ✅ **Nettoyage sécurisé** : Suppression des données sensibles lors du logout
 
 ## 🧪 **Plan de Tests Intensifs**
 
@@ -1777,9 +1974,16 @@ suppliers_orders: commandes fournisseurs
 | ⏳ **Package Déploiement**        | À FAIRE | HAUTE    | Sprint 9 |
 | ⏳ **Formation Utilisateurs**     | À FAIRE | MOYENNE  | Sprint 9 |
 
-**🏁 Objectif MVP Complet** : **Pharmacie digitale avec paiements mauritaniens fractionnés + modules crédits séparés en 18 semaines**
+**🏁 Objectif MVP Complet** : **Pharmacie digitale avec paiements mauritaniens fractionnés + modules crédits séparés**
 
-**📊 Progression** : 2/24 modules terminés (8.3%) | **⏱️ Durée totale** : 4.5 mois | **👥 Équipe** : 2-3 développeurs
+**📊 Progression** : 6/24 modules terminés (25%) | **⏱️ Durée totale** : 4.5 mois | **👥 Équipe** : 2-3 développeurs
+
+### 📈 **Modules Terminés Récents**
+
+3. **🔒 Sécurité Avancée** : Déconnexion automatique, protection sessions
+4. **👥 Dashboards par Rôle** : 5 interfaces spécialisées et adaptatives
+5. **🛡️ Système de Permissions** : Protection granulaire, routage conditionnel
+6. **👤 Gestion des Utilisateurs** : Module SuperAdmin complet avec approbation et attribution des rôles
 
 ### **🇲🇷 Spécificités Mauritaniennes Intégrées**
 
