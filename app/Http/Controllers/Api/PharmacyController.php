@@ -26,18 +26,24 @@ class PharmacyController extends Controller
             $totalCategories = Category::count();
             $totalSuppliers = Supplier::count();
 
-            // Valeur du stock total (utilise current_stock calculé)
+            // Valeur du stock total (utilise current_stock calculé, seulement produits actifs)
             $totalStockValue = 0;
             $products = Product::with('stockMovements')->get();
+            $activeProductsCount = 0;
             foreach ($products as $product) {
                 $currentStock = $product->current_stock;
-                $totalStockValue += $currentStock * $product->selling_price;
+                if ($currentStock > 0) { // Seulement les produits avec stock > 0
+                    $totalStockValue += $currentStock * $product->selling_price;
+                    $activeProductsCount++;
+                }
             }
 
             // Produits en alerte (stock faible) - basé sur current_stock
             $lowStockProducts = 0;
             foreach ($products as $product) {
-                if ($product->current_stock <= $product->low_stock_threshold) {
+                $currentStock = $product->current_stock;
+                // Stock faible : entre 1 et le seuil minimum (pas en rupture)
+                if ($currentStock > 0 && $currentStock <= $product->low_stock_threshold) {
                     $lowStockProducts++;
                 }
             }
@@ -119,7 +125,7 @@ class PharmacyController extends Controller
                 'message' => 'Dashboard data retrieved successfully',
                 'data' => [
                     'overview' => [
-                        'total_products' => $totalProducts,
+                        'total_products' => $activeProductsCount, // Seulement les produits actifs
                         'total_categories' => $totalCategories,
                         'total_suppliers' => $totalSuppliers,
                         'stock_value' => [

@@ -93,12 +93,15 @@ const StockIndexPage: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
+  // Filtrer les produits en rupture du total
+  const activeItems = stockItems.filter(item => item.status !== 'out_of_stock');
+
   const stats = {
-    total_items: stockItems.length,
+    total_items: activeItems.length, // Seulement les produits actifs (pas en rupture)
     in_stock: stockItems.filter(item => item.status === 'in_stock').length,
-    low_stock: stockItems.filter(item => item.status === 'low_stock' || item.current_stock <= item.min_stock).length,
+    low_stock: stockItems.filter(item => item.status === 'low_stock').length, // Pas de double comptage
     out_of_stock: stockItems.filter(item => item.status === 'out_of_stock').length,
-    total_value: stockItems.reduce((sum, item) => sum + (item.current_stock * item.unit_price), 0)
+    total_value: activeItems.reduce((sum, item) => sum + (item.current_stock * item.selling_price), 0) // Prix de vente
   };
 
   return (
