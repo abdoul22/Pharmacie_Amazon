@@ -1,13 +1,14 @@
 import React from 'react';
+import { useAuthContext } from '@/contexts/AuthContextSimple';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Package, 
-  Plus, 
-  Search, 
+import {
+  Package,
+  Plus,
+  Search,
   Filter,
   AlertTriangle,
   TrendingDown,
@@ -35,52 +36,42 @@ interface StockItem {
  * Page principale du module Stock - Liste des produits en stock
  */
 const StockIndexPage: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuthContext();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [filterStatus, setFilterStatus] = React.useState<string>('all');
 
-  // TODO: Remplacer par des données réelles depuis l'API
-  const stockItems: StockItem[] = [
-    {
-      id: 1,
-      name: 'Paracétamol 500mg',
-      category: 'Analgésique',
-      current_stock: 150,
-      min_stock: 50,
-      max_stock: 500,
-      unit_price: 25,
-      selling_price: 35,
-      supplier: 'Pharma Distribution',
-      expiry_date: '2025-06-15',
-      batch_number: 'BT2024001',
-      status: 'in_stock'
-    },
-    {
-      id: 2,
-      name: 'Amoxicilline 250mg',
-      category: 'Antibiotique',
-      current_stock: 25,
-      min_stock: 30,
-      max_stock: 200,
-      unit_price: 45,
-      selling_price: 60,
-      supplier: 'MediSupply',
-      expiry_date: '2024-12-30',
-      batch_number: 'BT2024002',
-      status: 'low_stock'
-    },
-    {
-      id: 3,
-      name: 'Aspirine 100mg',
-      category: 'Anti-inflammatoire',
-      current_stock: 0,
-      min_stock: 40,
-      max_stock: 300,
-      unit_price: 20,
-      selling_price: 30,
-      supplier: 'Pharma Plus',
-      status: 'out_of_stock'
-    }
-  ];
+  const [stockItems, setStockItems] = React.useState<StockItem[]>([]);
+
+  React.useEffect(() => {
+    if (!isAuthenticated || isLoading) return;
+    const load = async () => {
+      try {
+        const mod = await import('@/api/client');
+        const api = mod.apiClient;
+        const json = await api.get('/stock/products');
+        if (json?.success && Array.isArray(json.data)) {
+          const mapped: StockItem[] = (json.data as any[]).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            category: p.category?.name || '—',
+            current_stock: p.current_stock ?? p.initial_stock ?? 0,
+            min_stock: p.low_stock_threshold ?? 0,
+            max_stock: p.max_stock ?? 0,
+            unit_price: p.purchase_price ?? 0,
+            selling_price: p.selling_price ?? 0,
+            supplier: p.supplier?.name || '—',
+            expiry_date: p.expiry_date || undefined,
+            batch_number: p.batch_number || undefined,
+            status: (p.current_stock ?? p.initial_stock ?? 0) === 0 ? 'out_of_stock' : (p.current_stock ?? p.initial_stock ?? 0) <= (p.low_stock_threshold ?? 0) ? 'low_stock' : 'in_stock',
+          }));
+          setStockItems(mapped);
+        }
+      } catch (e) {
+        console.error('Erreur chargement stock:', e);
+      }
+    };
+    load();
+  }, [isAuthenticated, isLoading]);
 
   const getStatusBadge = (status: string, current: number, min: number) => {
     if (status === 'out_of_stock' || current === 0) {

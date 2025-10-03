@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ShoppingCart, 
-  Plus, 
-  TrendingUp, 
-  Clock, 
+import {
+  ShoppingCart,
+  Plus,
+  TrendingUp,
+  Clock,
   DollarSign,
   Users,
   Package,
@@ -20,24 +20,45 @@ import {
  * Page principale du module Sales - Point de Vente
  */
 const SalesIndexPage: React.FC = () => {
-  // Statistiques mock pour le dashboard POS
-  const salesStats = {
-    today_sales: 25,
-    today_revenue: 125000, // MRU
-    pending_transactions: 3,
-    average_ticket: 5000, // MRU
-    top_products: [
-      { name: 'Paracétamol 500mg', quantity: 15, revenue: 5250 },
-      { name: 'Amoxicilline 250mg', quantity: 8, revenue: 4800 },
-      { name: 'Vitamines B Complex', quantity: 12, revenue: 3600 }
-    ],
-    payment_methods_today: {
-      cash: 60,
-      bankily: 25,
-      masrivi: 10,
-      sedad: 5
-    }
-  };
+  // Statistiques réelles (ou 0 si aucune donnée)
+  const [salesStats, setSalesStats] = React.useState({
+    today_sales: 0,
+    today_revenue: 0,
+    pending_transactions: 0,
+    average_ticket: 0,
+    top_products: [] as Array<{ name: string; quantity: number; revenue: number }>,
+    payment_methods_today: { cash: 0, bankily: 0, masrivi: 0, sedad: 0 },
+  });
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const mod = await import('@/api/client');
+        const api = mod.apiClient;
+        const json = await api.get('/pharmacy/sales-stats');
+        const d: any = json?.data || {};
+        setSalesStats((prev) => ({
+          ...prev,
+          today_sales: d?.today?.transactions ?? 0,
+          today_revenue: d?.today?.revenue ?? 0,
+          average_ticket: d?.today?.average_ticket ?? 0,
+          pending_transactions: d?.today?.pending ?? 0,
+          top_products: d?.top_products?.map((p: any) => ({
+            name: p.product_name,
+            quantity: p.total_sold,
+            revenue: 0 // Pas de revenu dans l'API actuelle
+          })) ?? [],
+          payment_methods_today: d?.payment_methods?.reduce((acc: any, pm: any) => {
+            acc[pm.method] = pm.count;
+            return acc;
+          }, { cash: 0, bankily: 0, masrivi: 0, sedad: 0 }) ?? prev.payment_methods_today,
+        }));
+      } catch (e) {
+        console.warn('Stats POS indisponibles, affichage par défaut.');
+      }
+    };
+    load();
+  }, []);
 
   const quickActions = [
     {
@@ -222,7 +243,7 @@ const SalesIndexPage: React.FC = () => {
                   <Badge variant="secondary">{salesStats.payment_methods_today.cash}%</Badge>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-full">
@@ -234,7 +255,7 @@ const SalesIndexPage: React.FC = () => {
                   <Badge variant="secondary">{salesStats.payment_methods_today.bankily}%</Badge>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-full">
@@ -246,7 +267,7 @@ const SalesIndexPage: React.FC = () => {
                   <Badge variant="secondary">{salesStats.payment_methods_today.masrivi}%</Badge>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-red-100 dark:bg-red-800 rounded-full">

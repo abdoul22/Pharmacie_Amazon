@@ -28,7 +28,7 @@ export interface ApiError {
 class ApiClient {
   private client: AxiosInstance;
   private baseURL: string = '/api';
-  
+
   constructor() {
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -54,12 +54,20 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
+        // Envoyer le dernier timestamp d'activité côté client
+        try {
+          const lastActivity = localStorage.getItem('last_activity') || sessionStorage.getItem('last_activity');
+          const nowIso = new Date().toISOString();
+          config.headers['X-Last-Activity'] = lastActivity || nowIso;
+          // Mettre à jour côté client
+          localStorage.setItem('last_activity', nowIso);
+        } catch {}
+
         // Log des requêtes en développement
         if (process.env.NODE_ENV === 'development') {
           console.log(`🚀 API Request: ${config.method?.toUpperCase()} ${config.url}`);
         }
-        
+
         return config;
       },
       (error) => {
@@ -75,17 +83,26 @@ class ApiClient {
         if (process.env.NODE_ENV === 'development') {
           console.log(`✅ API Response: ${response.status}`, response.data);
         }
-        
+
         return response;
       },
       (error) => {
         console.error('❌ Response Interceptor Error:', error);
 
+        // Timeout réseau (ECONNABORTED)
+        if (error.code === 'ECONNABORTED') {
+          console.warn('⚠️ API Timeout - redirection si route protégée');
+        }
+
         // Gestion des erreurs d'authentification
         if (error.response?.status === 401) {
-          console.warn('⚠️ API Authentication Error - Token may be invalid');
-          // Ne pas rediriger automatiquement, laisser les composants gérer
-          // this.handleAuthenticationError();
+          const code = error.response?.data?.error_code;
+          if (code === 'SESSION_TIMEOUT') {
+            console.warn('⏰ Session expirée - nettoyage token et redirection');
+            this.handleAuthenticationError();
+          } else {
+            console.warn('⚠️ API Authentication Error - Token may be invalid');
+          }
         }
 
         // Gestion des erreurs de validation
@@ -140,7 +157,7 @@ class ApiClient {
    */
   private handleAuthenticationError(): void {
     this.clearAuthToken();
-    
+
     // Rediriger vers la page de connexion
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
@@ -152,7 +169,7 @@ class ApiClient {
    */
   private getCookie(name: string): string | null {
     if (typeof document === 'undefined') return null;
-    
+
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) {

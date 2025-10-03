@@ -3,10 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { 
-  Receipt, 
-  Search, 
-  Eye, 
+import {
+  Receipt,
+  Search,
+  Eye,
   RefreshCw,
   Calendar,
   DollarSign,
@@ -32,63 +32,32 @@ interface Sale {
  */
 const SalesHistoryPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = React.useState('');
-  
-  // Données mock des ventes
-  const sales: Sale[] = [
-    {
-      id: 1001,
-      date: '2025-09-25',
-      time: '14:35',
-      total: 2500,
-      items_count: 3,
-      payment_method: 'Bankily',
-      customer_phone: '+222 XX XX 12 34',
-      cashier: 'Admin Test',
-      status: 'completed'
-    },
-    {
-      id: 1002,
-      date: '2025-09-25',
-      time: '14:20',
-      total: 850,
-      items_count: 1,
-      payment_method: 'Espèces',
-      cashier: 'Admin Test',
-      status: 'completed'
-    },
-    {
-      id: 1003,
-      date: '2025-09-25',
-      time: '13:45',
-      total: 4200,
-      items_count: 5,
-      payment_method: 'Masrivi',
-      customer_phone: '+222 XX XX 56 78',
-      cashier: 'Admin Test',
-      status: 'refunded'
-    },
-    {
-      id: 1004,
-      date: '2025-09-25',
-      time: '12:30',
-      total: 1800,
-      items_count: 2,
-      payment_method: 'Sedad',
-      customer_phone: '+222 XX XX 90 12',
-      cashier: 'Vendeur Test',
-      status: 'completed'
-    },
-    {
-      id: 1005,
-      date: '2025-09-25',
-      time: '11:15',
-      total: 3600,
-      items_count: 4,
-      payment_method: 'Espèces',
-      cashier: 'Admin Test',
-      status: 'partial_refund'
-    }
-  ];
+
+  const [sales, setSales] = React.useState<Sale[]>([]);
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const mod = await import('@/api/services/invoice');
+        const res = await mod.InvoiceService.getInvoices();
+        const list = (res.data?.data || res.data || []).map((inv: any) => ({
+          id: inv.id,
+          date: inv.invoice_date,
+          time: inv.invoice_time,
+          total: inv.total_ttc,
+          items_count: inv.items?.length || 0,
+          payment_method: inv.payment_method,
+          customer_phone: inv.customer_phone,
+          cashier: inv.user?.name || '—',
+          status: inv.payment_status === 'paid' ? 'completed' : 'partial_refund'
+        }));
+        setSales(list);
+      } catch (e) {
+        console.error('Erreur chargement historique ventes:', e);
+      }
+    };
+    load();
+  }, []);
 
   const filteredSales = sales.filter(sale =>
     sale.id.toString().includes(searchTerm) ||

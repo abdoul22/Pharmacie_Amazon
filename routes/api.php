@@ -43,8 +43,8 @@ Route::prefix('pharmacy')->group(function () {
     Route::get('/payments/methods', [\App\Http\Controllers\Api\PaymentController::class, 'getMethods']);
 });
 
-// Protected authentication routes
-Route::middleware(['auth:sanctum'])->group(function () {
+// Protected authentication routes with session timeout enforcement
+Route::middleware(['auth:sanctum', 'session.timeout'])->group(function () {
 
     // Authentication routes
     Route::prefix('auth')->group(function () {
@@ -73,6 +73,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Dashboard principal
         Route::get('/dashboard', [\App\Http\Controllers\Api\PharmacyController::class, 'dashboard']);
         Route::get('/quick-stats', [\App\Http\Controllers\Api\PharmacyController::class, 'quickStats']);
+        Route::get('/sales-stats', [\App\Http\Controllers\Api\PharmacyController::class, 'salesStats']);
 
         // Note: Route payments/methods déplacée en public pour éviter redirection
 

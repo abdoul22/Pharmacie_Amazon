@@ -2,12 +2,12 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Activity, 
-  AlertTriangle, 
-  Package, 
-  TrendingUp, 
-  Users, 
+import {
+  Activity,
+  AlertTriangle,
+  Package,
+  TrendingUp,
+  Users,
   DollarSign,
   Calendar,
   ShoppingCart,
@@ -18,6 +18,7 @@ import {
   FileText,
   CreditCard,
   Truck,
+  FolderOpen,
   Pill
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -30,45 +31,28 @@ import { useAuthContext } from '@/contexts/AuthContextSimple';
 const PharmacyDashboardPage: React.FC = () => {
   // Utiliser le context d'authentification
   const { user } = useAuthContext();
-  
-  // Données mock temporaires (éviter les appels API pour le moment)
-  const [isLoading, setIsLoading] = React.useState(false);
+
+  const [isDataLoading, setIsDataLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  
-  const dashboardData = {
+
+  const [dashboardData, setDashboardData] = React.useState({
     overview: {
-      total_products: 125,
-      total_categories: 8,
-      total_suppliers: 12,
+      total_products: 0,
+      total_categories: 0,
+      total_suppliers: 0,
       stock_value: {
-        amount: 2850000,
-        formatted: '2,850,000 MRU'
+        amount: 0,
+        formatted: '0 MRU'
       }
     },
     alerts: {
-      low_stock: 5,
-      near_expiry: 3,
-      out_of_stock: 2
+      low_stock: 0,
+      near_expiry: 0,
+      out_of_stock: 0
     },
-    recent_movements: [
-      {
-        id: 1,
-        product_name: 'Paracétamol 500mg',
-        type: 'in' as const,
-        quantity: 50,
-        user_name: 'Admin',
-        created_at: '2025-09-25 14:30',
-        reference: 'MOV-001'
-      }
-    ],
-    top_products: [
-      {
-        product_name: 'Paracétamol 500mg',
-        total_sold: 25,
-        current_stock: 150
-      }
-    ],
-    sales_stats: [],
+    recent_movements: [] as Array<any>,
+    top_products: [] as Array<any>,
+    sales_stats: [] as Array<any>,
     quick_actions: [
       {
         id: 'stock',
@@ -84,16 +68,89 @@ const PharmacyDashboardPage: React.FC = () => {
         route: '/app/payments',
         color: 'bg-green-500'
       }
+      ,
+      {
+        id: 'categories',
+        label: 'Catégories',
+        icon: 'folder-open',
+        route: '/app/categories',
+        color: 'bg-amber-500'
+      },
+      {
+        id: 'suppliers',
+        label: 'Fournisseurs',
+        icon: 'truck',
+        route: '/app/suppliers',
+        color: 'bg-purple-500'
+      }
     ],
     currency: 'MRU',
-    last_updated: '2025-09-25 14:35'
-  };
-  
+    last_updated: ''
+  });
+
+  const { isAuthenticated, isLoading } = useAuthContext();
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const { apiClient } = await import('@/api/client');
+
+        // 1) Dashboard complet (catégories, fournisseurs, valeur stock)
+        const dRes = await apiClient.get('/pharmacy/dashboard');
+        const d: any = dRes?.data || {};
+
+        // 2) Stats rapides (alertes)
+        const sRes = await apiClient.get('/pharmacy/quick-stats');
+        const s: any = sRes?.data || {};
+
+        // 3) Produits (fallback et calculs complémentaires)
+        const pRes = await apiClient.get('/stock/products');
+        const items: any[] = Array.isArray(pRes?.data) ? pRes.data : [];
+
+        // Calculs côté client avec bons champs (initial_stock, low_stock_threshold)
+        const clientLowStock = items.filter((p: any) =>
+          (p.initial_stock ?? 0) > 0 && (p.initial_stock ?? 0) <= (p.low_stock_threshold ?? 0)
+        ).length;
+        const clientOutOfStock = items.filter((p: any) => (p.initial_stock ?? 0) === 0).length;
+
+        setDashboardData((prev) => ({
+          ...prev,
+          overview: {
+            total_products: d?.overview?.total_products ?? items.length,
+            total_categories: d?.overview?.total_categories ?? 0,
+            total_suppliers: d?.overview?.total_suppliers ?? 0,
+            stock_value: {
+              amount: d?.overview?.stock_value?.amount ?? 0,
+              formatted: d?.overview?.stock_value?.formatted ?? `${0} MRU`
+            }
+          },
+          alerts: {
+            low_stock: s?.low_stock_count ?? clientLowStock,
+            near_expiry: s?.near_expiry_count ?? 0,
+            out_of_stock: s?.out_of_stock_count ?? clientOutOfStock,
+          },
+          // Back-end peut fournir recent_movements et top_products; fallback vide
+          top_products: Array.isArray(d?.top_products) ? d.top_products : [],
+          recent_movements: Array.isArray(d?.recent_movements) ? d.recent_movements : [],
+          last_updated: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        }));
+        setIsDataLoading(false);
+      } catch (e: any) {
+        setError('Impossible de charger le dashboard.');
+        setIsDataLoading(false);
+      }
+    };
+    if (isAuthenticated && !isLoading) {
+      load();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isLoading]);
+
   const refresh = () => {
     console.log('Refresh dashboard data');
   };
 
-  if (isLoading) {
+  if (isLoading || isDataLoading) {
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse">
@@ -159,6 +216,22 @@ const PharmacyDashboardPage: React.FC = () => {
         color: 'bg-green-500',
         link: '/app/sales',
         stats: 'Point de vente'
+      },
+      {
+        title: 'Catégories',
+        description: 'Gérer les catégories de produits',
+        icon: FolderOpen,
+        color: 'bg-amber-500',
+        link: '/app/categories',
+        stats: `${overview.total_categories} catégories`
+      },
+      {
+        title: 'Fournisseurs',
+        description: 'Gestion des fournisseurs',
+        icon: Truck,
+        color: 'bg-purple-500',
+        link: '/app/suppliers',
+        stats: `${overview.total_suppliers} fournisseurs`
       }
     ];
 
@@ -184,7 +257,7 @@ const PharmacyDashboardPage: React.FC = () => {
           },
           ...baseModules
         ];
-      
+
       case 'admin':
         return [
           {
@@ -205,7 +278,7 @@ const PharmacyDashboardPage: React.FC = () => {
           },
           ...baseModules
         ];
-      
+
       case 'pharmacien':
         return [
           {
@@ -226,7 +299,7 @@ const PharmacyDashboardPage: React.FC = () => {
           },
           ...baseModules
         ];
-      
+
       case 'vendeur':
         return [
           {
@@ -247,7 +320,7 @@ const PharmacyDashboardPage: React.FC = () => {
           },
           ...baseModules
         ];
-      
+
       case 'caissier':
         return [
           {
@@ -268,7 +341,7 @@ const PharmacyDashboardPage: React.FC = () => {
           },
           ...baseModules
         ];
-      
+
       default:
         return baseModules;
     }
@@ -283,7 +356,7 @@ const PharmacyDashboardPage: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Dashboard {user?.role === 'superadmin' ? 'SuperAdmin' : 
+            Dashboard {user?.role === 'superadmin' ? 'SuperAdmin' :
                      user?.role === 'admin' ? 'Administration' :
                      user?.role === 'pharmacien' ? 'Pharmacien' :
                      user?.role === 'vendeur' ? 'Vendeur' :
@@ -400,8 +473,8 @@ const PharmacyDashboardPage: React.FC = () => {
                 <div key={movement.id} className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className={`w-3 h-3 rounded-full ${
-                      movement.type === 'in' ? 'bg-green-500' : 
-                      movement.type === 'out' ? 'bg-red-500' : 
+                      movement.type === 'in' ? 'bg-green-500' :
+                      movement.type === 'out' ? 'bg-red-500' :
                       'bg-blue-500'
                     }`} />
                     <div>
@@ -413,8 +486,8 @@ const PharmacyDashboardPage: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <Badge variant={
-                      movement.type === 'in' ? 'default' : 
-                      movement.type === 'out' ? 'destructive' : 
+                      movement.type === 'in' ? 'default' :
+                      movement.type === 'out' ? 'destructive' :
                       'secondary'
                     }>
                       {movement.type === 'in' ? '+' : movement.type === 'out' ? '-' : '±'}{movement.quantity}
@@ -422,13 +495,13 @@ const PharmacyDashboardPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-              
+
               {recent_movements.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Aucun mouvement récent
                 </p>
               )}
-              
+
               {recent_movements.length > 5 && (
                 <div className="pt-2">
                   <Link to="/app/pharmacy/movements">
@@ -470,7 +543,7 @@ const PharmacyDashboardPage: React.FC = () => {
                   </div>
                 </div>
               ))}
-              
+
               {top_products.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Aucune vente enregistrée

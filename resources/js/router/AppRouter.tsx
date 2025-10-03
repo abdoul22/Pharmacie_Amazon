@@ -70,14 +70,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { isAuthenticated, isLoading, hasAnyRole } = useAuthContext();
 
+  // CRITICAL: Ne jamais rediriger pendant le chargement
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return null; // Pas de loader, juste null pour éviter les redirections
   }
 
+  // Redirection SEULEMENT si le chargement est terminé ET non authentifié
   if (!isAuthenticated) {
     return <Navigate to="/auth/login" replace />;
   }
@@ -101,14 +99,12 @@ interface AuthOnlyRouteProps {
 const AuthOnlyRoute: React.FC<AuthOnlyRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuthContext();
 
+  // CRITICAL: Ne jamais rediriger pendant le chargement
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900"></div>
-      </div>
-    );
+    return null; // Pas de loader, juste null pour éviter les redirections
   }
 
+  // Redirection SEULEMENT si le chargement est terminé ET authentifié
   if (isAuthenticated) {
     return <Navigate to="/app/pharmacy" replace />;
   }
@@ -127,8 +123,16 @@ const AppRouterContent: React.FC = () => {
         <Route path="/" element={<WelcomePharmacyPage />} />
 
             {/* Routes d'authentification avec shadcn/ui */}
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
+            <Route path="/auth/login" element={
+              <AuthOnlyRoute>
+                <Login />
+              </AuthOnlyRoute>
+            } />
+            <Route path="/auth/register" element={
+              <AuthOnlyRoute>
+                <Register />
+              </AuthOnlyRoute>
+            } />
 
             {/* Route de debug */}
             <Route path="/debug/auth" element={<DebugAuthPage />} />

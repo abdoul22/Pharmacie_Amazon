@@ -49,6 +49,8 @@ class InvoiceController extends Controller
             $subtotalHT = 0;
             $itemsData = [];
 
+            $stockService = app(\App\Services\StockService::class);
+
             foreach ($request->items as $item) {
                 $product = Product::find($item['product_id']);
 
@@ -56,9 +58,10 @@ class InvoiceController extends Controller
                     throw new \Exception("Produit introuvable: {$item['product_id']}");
                 }
 
-                // Vérifier le stock
-                if ($product->current_stock < $item['quantity']) {
-                    throw new \Exception("Stock insuffisant pour {$product->name}. Stock disponible: {$product->current_stock}");
+                // Vérifier le stock via StockService (initial_stock + mouvements)
+                $available = $stockService->getCurrentStock($product);
+                if ($available < $item['quantity']) {
+                    throw new \Exception("Stock insuffisant pour {$product->name}. Stock disponible: {$available}");
                 }
 
                 $totalPrice = $item['quantity'] * $item['unit_price'];
@@ -122,9 +125,15 @@ class InvoiceController extends Controller
                 $itemData['invoice_id'] = $invoice->id;
                 InvoiceItem::create($itemData);
 
-                // Décrémenter le stock
+                // Enregistrer la sortie de stock via StockService
                 $product = Product::find($itemData['product_id']);
-                $product->decrement('current_stock', $itemData['quantity']);
+                $stockService->removeStock(
+                    $product,
+                    (int) $itemData['quantity'],
+                    'sale',
+                    $invoice->invoice_number,
+                    $request->user()
+                );
             }
 
             DB::commit();

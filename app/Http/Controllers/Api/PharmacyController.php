@@ -25,12 +25,21 @@ class PharmacyController extends Controller
             $totalCategories = Category::count();
             $totalSuppliers = Supplier::count();
 
-            // Valeur du stock total
-            $totalStockValue = Product::selectRaw('SUM(quantity * selling_price) as total')
-                ->value('total') ?? 0;
+            // Valeur du stock total (utilise current_stock calculé)
+            $totalStockValue = 0;
+            $products = Product::with('stockMovements')->get();
+            foreach ($products as $product) {
+                $currentStock = $product->current_stock;
+                $totalStockValue += $currentStock * $product->selling_price;
+            }
 
-            // Produits en alerte (stock faible)
-            $lowStockProducts = Product::where('quantity', '<=', 10)->count();
+            // Produits en alerte (stock faible) - basé sur current_stock
+            $lowStockProducts = 0;
+            foreach ($products as $product) {
+                if ($product->current_stock <= $product->low_stock_threshold) {
+                    $lowStockProducts++;
+                }
+            }
 
             // Produits expirés ou bientôt expirés (si champ expiry_date existe)
             $nearExpiryProducts = Product::whereNotNull('expiry_date')
@@ -63,18 +72,30 @@ class PharmacyController extends Controller
                 ->with('product')
                 ->get()
                 ->map(function ($movement) {
+                    // Charger les mouvements de stock pour calculer le current_stock
+                    $product = $movement->product;
+                    if ($product) {
+                        $product->load('stockMovements');
+                    }
                     return [
-                        'product_name' => $movement->product->name ?? 'Produit supprimé',
+                        'product_name' => $product->name ?? 'Produit supprimé',
                         'total_sold' => $movement->total_sold,
-                        'current_stock' => $movement->product->quantity ?? 0,
+                        'current_stock' => $product ? $product->current_stock : 0,
                     ];
                 });
 
             // Alertes actives
+            $outOfStock = 0;
+            foreach ($products as $product) {
+                if ($product->current_stock <= 0) {
+                    $outOfStock++;
+                }
+            }
+
             $activeAlerts = [
                 'low_stock' => $lowStockProducts,
                 'near_expiry' => $nearExpiryProducts,
-                'out_of_stock' => Product::where('quantity', 0)->count(),
+                'out_of_stock' => $outOfStock,
             ];
 
             // Statistiques des ventes (7 derniers jours)
@@ -140,6 +161,24 @@ class PharmacyController extends Controller
             'color' => 'blue'
         ];
 
+        // Lien vers Catégories (toujours visible pour faciliter la configuration)
+        $actions[] = [
+            'id' => 'categories',
+            'label' => 'Catégories',
+            'icon' => 'folder-open',
+            'route' => '/categories',
+            'color' => 'amber'
+        ];
+
+        // Lien vers Fournisseurs (toujours visible)
+        $actions[] = [
+            'id' => 'suppliers',
+            'label' => 'Fournisseurs',
+            'icon' => 'truck',
+            'route' => '/suppliers',
+            'color' => 'purple'
+        ];
+
         // Actions selon les permissions
         if (\App\Services\PermissionService::userHasPermission($user, 'create_sales')) {
             $actions[] = [
@@ -200,11 +239,28 @@ class PharmacyController extends Controller
     public function quickStats(Request $request): JsonResponse
     {
         try {
+            // Calculer le stock actuel pour chaque produit
+            $products = Product::with('stockMovements')->get();
+            $lowStockCount = 0;
+            $outOfStockCount = 0;
+            $totalValue = 0;
+
+            foreach ($products as $product) {
+                $currentStock = $product->current_stock;
+                $totalValue += $currentStock * $product->selling_price;
+
+                if ($currentStock <= 0) {
+                    $outOfStockCount++;
+                } elseif ($currentStock <= $product->low_stock_threshold) {
+                    $lowStockCount++;
+                }
+            }
+
             $stats = [
                 'products_count' => Product::count(),
-                'low_stock_count' => Product::where('quantity', '<=', 10)->count(),
-                'out_of_stock_count' => Product::where('quantity', 0)->count(),
-                'total_value' => Product::selectRaw('SUM(quantity * selling_price) as total')->value('total') ?? 0,
+                'low_stock_count' => $lowStockCount,
+                'out_of_stock_count' => $outOfStockCount,
+                'total_value' => $totalValue,
                 'recent_movements_count' => StockMovement::whereDate('created_at', Carbon::today())->count(),
             ];
 
@@ -213,9 +269,99 @@ class PharmacyController extends Controller
                 'data' => $stats
             ]);
         } catch (\Exception $e) {
+            \Log::error('quickStats error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la récupération des statistiques',
+                'error' => app()->environment('local') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    /**
+     * Statistiques de ventes pour la page /app/sales
+     */
+    public function salesStats(Request $request): JsonResponse
+    {
+        try {
+            $today = Carbon::today();
+            $yesterday = Carbon::yesterday();
+
+            // Ventes d'aujourd'hui
+            $todaySales = StockMovement::where('type', 'out')
+                ->whereDate('created_at', $today)
+                ->get();
+
+            $todayTransactions = $todaySales->count();
+            $todayRevenue = 0;
+            $todayItemsSold = $todaySales->sum('quantity');
+
+            // Calculer le chiffre d'affaires d'aujourd'hui
+            foreach ($todaySales as $sale) {
+                $product = $sale->product;
+                if ($product) {
+                    $todayRevenue += $sale->quantity * $product->selling_price;
+                }
+            }
+
+            // Ticket moyen
+            $averageTicket = $todayTransactions > 0 ? $todayRevenue / $todayTransactions : 0;
+
+            // Transactions en attente (si on a un système de panier suspendu)
+            $pendingTransactions = 0; // À implémenter si nécessaire
+
+            // Top produits du jour
+            $topProductsToday = StockMovement::selectRaw('product_id, SUM(quantity) as total_sold')
+                ->where('type', 'out')
+                ->whereDate('created_at', $today)
+                ->groupBy('product_id')
+                ->orderBy('total_sold', 'desc')
+                ->limit(5)
+                ->with('product')
+                ->get()
+                ->map(function ($movement) {
+                    return [
+                        'product_name' => $movement->product->name ?? 'Produit supprimé',
+                        'total_sold' => $movement->total_sold,
+                    ];
+                });
+
+            // Modes de paiement du jour (basé sur les factures)
+            $paymentMethods = \App\Models\Invoice::whereDate('created_at', $today)
+                ->selectRaw('payment_method, COUNT(*) as count, SUM(total_ttc) as total')
+                ->groupBy('payment_method')
+                ->get()
+                ->map(function ($invoice) {
+                    return [
+                        'method' => $invoice->payment_method,
+                        'count' => $invoice->count,
+                        'total' => $invoice->total,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'today' => [
+                        'transactions' => $todayTransactions,
+                        'revenue' => $todayRevenue,
+                        'items_sold' => $todayItemsSold,
+                        'average_ticket' => $averageTicket,
+                        'pending' => $pendingTransactions,
+                    ],
+                    'top_products' => $topProductsToday,
+                    'payment_methods' => $paymentMethods,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('salesStats error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des statistiques de ventes',
                 'error' => app()->environment('local') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import apiClient from '@/api/client';
 
 // Types d'authentification
 export interface User {
@@ -65,18 +66,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const initializeAuth = async () => {
     try {
+      const isProtectedPath = () => {
+        if (typeof window === 'undefined') return false;
+        const p = window.location.pathname || '';
+        return p.startsWith('/app');
+      };
+
       // Vérifier si un token existe
       const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-      
+
       console.log('AuthContext - Initialize:', { token: token ? 'exists' : 'none' });
-      
+
       if (token) {
         // Nettoyer les anciens tokens test
         if (token.startsWith('test-token-')) {
           console.log('Suppression ancien token test');
           localStorage.removeItem('auth_token');
           sessionStorage.removeItem('auth_token');
-          
+
           setState(prev => ({
             ...prev,
             user: null,
@@ -85,7 +92,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }));
           return;
         }
-        
+
         // Valider le token avec l'API Laravel
         try {
           console.log('AuthContext - Validating token:', token.substring(0, 20) + '...');
@@ -113,18 +120,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               isAuthenticated: true,
               isLoading: false,
             }));
+
+            // Synchroniser le client API avec le token stocké
+            try {
+              const remembered = !!localStorage.getItem('auth_token');
+              const activeToken = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+              if (activeToken) {
+                apiClient.setAuthToken(activeToken, remembered);
+              }
+            } catch {}
           } else {
             // Token invalide, supprimer et déconnecter
             console.log('AuthContext - Token invalid, logging out');
             localStorage.removeItem('auth_token');
             sessionStorage.removeItem('auth_token');
-            
+
             setState(prev => ({
               ...prev,
               user: null,
               isAuthenticated: false,
               isLoading: false,
             }));
+
+            // Forcer la redirection uniquement si on est sur une route protégée
+            if (isProtectedPath() && typeof window !== 'undefined') {
+              window.location.replace('/auth/login');
+            }
           }
         } catch (error) {
           console.error('Erreur validation token:', error);
@@ -134,6 +155,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             isAuthenticated: false,
             isLoading: false,
           }));
+
+          if (isProtectedPath() && typeof window !== 'undefined') {
+            window.location.replace('/auth/login');
+          }
         }
       } else {
         setState(prev => ({
@@ -142,6 +167,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           isAuthenticated: false,
           isLoading: false,
         }));
+
+        if (isProtectedPath() && typeof window !== 'undefined') {
+          window.location.replace('/auth/login');
+        }
       }
     } catch (error) {
       console.error('Erreur lors de l\'initialisation auth:', error);
@@ -152,6 +181,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading: false,
         error: 'Erreur lors de l\'initialisation de l\'authentification',
       }));
+
+      if (isProtectedPath() && typeof window !== 'undefined') {
+        window.location.replace('/auth/login');
+      }
     }
   };
 
@@ -160,11 +193,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+
     try {
       // Appel à l'API Laravel pour la connexion
       console.log('Login attempt:', credentials);
-      
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -195,6 +228,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           sessionStorage.setItem('auth_token', token);
           console.log('AuthContext - Token stored in sessionStorage');
         }
+
+        // Informer le client API du token actif
+        try { apiClient.setAuthToken(token, !!credentials.remember); } catch {}
 
         setState(prev => ({
           ...prev,
@@ -235,10 +271,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    */
   const logout = async (): Promise<void> => {
     setState(prev => ({ ...prev, isLoading: true }));
-    
+
     try {
       const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
-      
+
       // Appeler l'API de déconnexion si un token existe
       if (token) {
         try {
@@ -254,11 +290,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.warn('Erreur lors de l\'appel API de déconnexion:', error);
         }
       }
-      
+
       // Nettoyer tous les tokens et données sensibles
       localStorage.removeItem('auth_token');
       sessionStorage.removeItem('auth_token');
-      
+
       // Nettoyer les données sensibles supplémentaires
       localStorage.removeItem('user_preferences');
       sessionStorage.removeItem('cart_data');
@@ -271,11 +307,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isLoading: false,
         error: null,
       });
-      
+
       console.info('🔓 Déconnexion réussie - Données nettoyées');
     } catch (error) {
       console.warn('Erreur lors de la déconnexion:', error);
-      
+
       // Même en cas d'erreur, nettoyer les données locales
       localStorage.removeItem('auth_token');
       sessionStorage.removeItem('auth_token');
@@ -283,7 +319,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       sessionStorage.removeItem('cart_data');
       sessionStorage.removeItem('temp_sale_data');
       sessionStorage.removeItem('session_last_activity');
-      
+
       setState({
         user: null,
         isAuthenticated: false,

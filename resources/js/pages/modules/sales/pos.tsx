@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { 
-  ShoppingCart, 
-  Plus, 
-  Minus, 
-  Trash2, 
-  Search, 
+import {
+  ShoppingCart,
+  Plus,
+  Minus,
+  Trash2,
+  Search,
   ScanLine,
   CreditCard,
   DollarSign,
@@ -52,15 +52,42 @@ const POSPage: React.FC = () => {
   const [customerPhone, setCustomerPhone] = useState('');
   const [showPayment, setShowPayment] = useState(false);
 
-  // Produits mock (à remplacer par API)
-  const products: Product[] = [
-    { id: 1, name: 'Paracétamol 500mg', price: 350, stock: 150, category: 'Analgésique', barcode: '1234567890123' },
-    { id: 2, name: 'Amoxicilline 250mg', price: 600, stock: 25, category: 'Antibiotique', barcode: '1234567890124' },
-    { id: 3, name: 'Aspirine 100mg', price: 300, stock: 0, category: 'Anti-inflammatoire', barcode: '1234567890125' },
-    { id: 4, name: 'Vitamines B Complex', price: 450, stock: 80, category: 'Vitamines', barcode: '1234567890126' },
-    { id: 5, name: 'Doliprane 1000mg', price: 420, stock: 60, category: 'Analgésique', barcode: '1234567890127' },
-    { id: 6, name: 'Augmentin 500mg', price: 850, stock: 35, category: 'Antibiotique', barcode: '1234567890128' },
-  ];
+  // Produits chargés depuis l'API
+  const [products, setProducts] = useState<Product[]>([]);
+  // État local pour le stock des produits (pour mise à jour immédiate)
+  const [productStock, setProductStock] = useState<Record<number, number>>({});
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const { default: apiClient } = await import('@/api/client');
+        const resp: any = await apiClient.get('/stock/products');
+        const data = Array.isArray(resp?.data) ? resp.data : [];
+        // Mapper les champs backend -> POS Product
+        const mapped: Product[] = data.map((p: any) => {
+          const currentStock = p.current_stock ?? p.initial_stock ?? 0;
+          return {
+            id: p.id,
+            name: p.name,
+            price: Number(p.selling_price ?? p.purchase_price ?? 0),
+            stock: Number(currentStock),
+            barcode: p.barcode ?? '',
+            category: p.category?.name ?? ''
+          };
+        });
+        setProducts(mapped);
+        // Initialiser l'état local du stock
+        const stockMap: Record<number, number> = {};
+        mapped.forEach(p => {
+          stockMap[p.id] = p.stock;
+        });
+        setProductStock(stockMap);
+      } catch (e) {
+        console.error('Erreur chargement produits POS:', e);
+      }
+    };
+    loadProducts();
+  }, []);
 
   // Modes de paiement mauritaniens
   const paymentMethods: PaymentMethod[] = [
@@ -85,7 +112,8 @@ const POSPage: React.FC = () => {
 
   // Ajouter un produit au panier
   const addToCart = (product: Product) => {
-    if (product.stock <= 0) {
+    const currentStock = productStock[product.id] ?? product.stock;
+    if (currentStock <= 0) {
       alert('Produit en rupture de stock');
       return;
     }
@@ -94,8 +122,9 @@ const POSPage: React.FC = () => {
       const existingItem = prevCart.find(item => item.id === product.id);
       if (existingItem) {
         const newQuantity = existingItem.quantity + 1;
-        if (newQuantity > product.stock) {
-          alert(`Stock insuffisant. Stock disponible: ${product.stock}`);
+        const availableStock = productStock[product.id] ?? product.stock;
+        if (newQuantity > availableStock) {
+          alert(`Stock insuffisant. Stock disponible: ${availableStock}`);
           return prevCart;
         }
         return prevCart.map(item =>
@@ -121,8 +150,9 @@ const POSPage: React.FC = () => {
     }
 
     const product = products.find(p => p.id === productId);
-    if (product && newQuantity > product.stock) {
-      alert(`Stock insuffisant. Stock disponible: ${product.stock}`);
+    const availableStock = productStock[productId] ?? product?.stock ?? 0;
+    if (product && newQuantity > availableStock) {
+      alert(`Stock insuffisant. Stock disponible: ${availableStock}`);
       return;
     }
 
@@ -175,34 +205,55 @@ const POSPage: React.FC = () => {
         }))
       };
 
-      // Créer la facture via l'API
-      const result = await fetch('/api/pharmacy/invoices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-        body: JSON.stringify(invoiceData)
-      });
+      // Utiliser le client API centralisé (Axios) qui ajoute le token automatiquement
+      try {
+        const mod = await import('@/api/services/invoice');
+        const { invoice, pdf_url } = await mod.InvoiceService.createInvoice(invoiceData as any);
 
-      const response = await result.json();
+        // Mettre à jour le stock local immédiatement
+        cart.forEach(item => {
+          setProductStock(prev => ({
+            ...prev,
+            [item.id]: Math.max(0, (prev[item.id] ?? 0) - item.quantity)
+          }));
+        });
 
-      if (response.success) {
-        alert(`Vente réalisée avec succès !\nFacture: ${response.data.invoice.invoice_number}`);
-        
-        // Proposer de télécharger la facture PDF
+        alert(`Vente réalisée avec succès !\nFacture: ${invoice.invoice_number}`);
         if (confirm('Souhaitez-vous télécharger la facture PDF ?')) {
-          const pdfUrl = `/api/pharmacy/invoices/${response.data.invoice.id}/pdf`;
-          const link = document.createElement('a');
-          link.href = pdfUrl;
-          link.download = `facture-${response.data.invoice.invoice_number}.pdf`;
-          link.click();
+          window.open(pdf_url, '_blank');
         }
-        
         clearCart();
-      } else {
-        alert(`Erreur: ${response.message}`);
+        return;
+      } catch (apiErr: any) {
+        const status = apiErr?.response?.status;
+        const data = apiErr?.response?.data;
+        console.error('Invoice API error:', status, data || apiErr);
+        if (status === 401) {
+          alert('Votre session a expiré. Veuillez vous reconnecter.');
+          return;
+        }
+        if (status === 422) {
+          alert('Erreurs de validation: ' + JSON.stringify(data?.errors));
+          return;
+        }
+        // Fallback: tentative via fetch si Axios indisponible
+        const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+        const result = await fetch('/api/pharmacy/invoices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(invoiceData)
+        });
+        const response = await result.json();
+        if (response?.success) {
+          alert(`Vente réalisée avec succès !\nFacture: ${response.data.invoice.invoice_number}`);
+          clearCart();
+          return;
+        }
+        alert(`Erreur: ${response?.message || 'Création de facture échouée'}`);
       }
     } catch (error) {
       console.error('Erreur lors de la finalisation:', error);
@@ -213,7 +264,7 @@ const POSPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* En-tête POS */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Point de Vente</h1>
@@ -229,10 +280,10 @@ const POSPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Section produits (2/3) */}
           <div className="lg:col-span-2">
-            
+
             {/* Barre de recherche */}
             <Card className="mb-4">
               <CardContent className="pt-4">
@@ -282,11 +333,11 @@ const POSPage: React.FC = () => {
                           </p>
                         </div>
                         <div className="text-right">
-                          <Badge 
-                            variant={product.stock > 10 ? 'default' : product.stock > 0 ? 'secondary' : 'destructive'}
+                          <Badge
+                            variant={(productStock[product.id] ?? product.stock) > 10 ? 'default' : (productStock[product.id] ?? product.stock) > 0 ? 'secondary' : 'destructive'}
                             className="text-xs"
                           >
-                            {product.stock > 0 ? `Stock: ${product.stock}` : 'Rupture'}
+                            {(productStock[product.id] ?? product.stock) > 0 ? `Stock: ${productStock[product.id] ?? product.stock}` : 'Rupture'}
                           </Badge>
                         </div>
                       </div>
@@ -313,7 +364,7 @@ const POSPage: React.FC = () => {
                   )}
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-4">
                 {cart.length === 0 ? (
                   <div className="text-center py-8">
@@ -391,7 +442,7 @@ const POSPage: React.FC = () => {
 
                     {/* Modes de paiement */}
                     {!showPayment ? (
-                      <Button 
+                      <Button
                         onClick={() => setShowPayment(true)}
                         className="w-full"
                         size="lg"

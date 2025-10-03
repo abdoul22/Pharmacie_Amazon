@@ -16,33 +16,34 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     /**
-     * Register a new user
+     * Register a new user (pending approval)
      */
     public function register(RegisterRequest $request): JsonResponse
     {
         try {
+            // Map to new role system: try default "vendeur" role, otherwise leave null
+            $defaultRoleId = \App\Models\Role::where('name', 'vendeur')->value('id');
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'role' => 'vendeur', // Default role
+                'role_id' => $defaultRoleId,
+                'is_approved' => false,
             ]);
-
-            $token = $user->createToken('auth-token')->plainTextToken;
 
             return response()->json([
                 'success' => true,
-                'message' => 'User registered successfully',
+                'message' => 'Inscription réussie. Votre compte est en attente d\'approbation.',
                 'data' => [
                     'user' => [
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'role' => $user->role,
-                        'email_verified_at' => $user->email_verified_at,
+                        'role' => $user->role, // accessor string or null
+                        'is_approved' => $user->is_approved,
                         'created_at' => $user->created_at,
                     ],
-                    'token' => $token,
                 ]
             ], 201);
         } catch (\Exception $e) {

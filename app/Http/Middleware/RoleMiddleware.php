@@ -25,7 +25,16 @@ class RoleMiddleware
             ], 401);
         }
 
-        if (!$user->hasRole($roles[0])) {
+        // Autoriser si n'importe lequel des rôles passés correspond
+        $allowed = false;
+        foreach ($roles as $role) {
+            if ($user->hasRole($role)) {
+                $allowed = true;
+                break;
+            }
+        }
+
+        if (!$allowed) {
             return response()->json([
                 'success' => false,
                 'message' => 'Forbidden - Insufficient permissions'

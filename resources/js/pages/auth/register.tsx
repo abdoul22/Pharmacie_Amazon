@@ -76,23 +76,35 @@ export default function Register() {
     }
 
     try {
-      // TODO: Connecter avec l'API Laravel
       console.log('Register attempt:', formData);
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+      };
 
-      // Simulation d'appel API
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Appel réel à l'API
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json?.success) {
+        throw new Error(json?.message || 'Inscription échouée');
+      }
 
       setSuccess(true);
-
-      // Redirection après succès
       setTimeout(() => {
         navigate('/auth/login', {
-          state: { message: 'Inscription réussie ! Votre compte est en attente d\'approbation.' }
+          state: { message: "Inscription réussie ! Votre compte est en attente d'approbation." }
         });
-      }, 2000);
+      }, 1200);
 
     } catch (err: any) {
-      setErrors({ general: err.message || 'Erreur lors de l\'inscription' });
+      setErrors({ general: err.message || "Erreur lors de l'inscription" });
     } finally {
       setIsLoading(false);
     }
