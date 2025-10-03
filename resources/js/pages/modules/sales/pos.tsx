@@ -13,7 +13,6 @@ import {
   ScanLine,
   CreditCard,
   DollarSign,
-  Users,
   Receipt,
   X
 } from 'lucide-react';
@@ -61,18 +60,28 @@ const POSPage: React.FC = () => {
     const loadProducts = async () => {
       try {
         const { default: apiClient } = await import('@/api/client');
-        const resp: any = await apiClient.get('/stock/products');
+        const resp = await apiClient.get('/stock/products') as { data?: unknown[] };
         const data = Array.isArray(resp?.data) ? resp.data : [];
         // Mapper les champs backend -> POS Product
-        const mapped: Product[] = data.map((p: any) => {
-          const currentStock = p.current_stock ?? p.initial_stock ?? 0;
+        const mapped: Product[] = data.map((p: unknown) => {
+          const product = p as {
+            id: number;
+            name: string;
+            selling_price?: number;
+            purchase_price?: number;
+            current_stock?: number;
+            initial_stock?: number;
+            barcode?: string;
+            category?: { name: string }
+          };
+          const currentStock = product.current_stock ?? product.initial_stock ?? 0;
           return {
-            id: p.id,
-            name: p.name,
-            price: Number(p.selling_price ?? p.purchase_price ?? 0),
+            id: product.id,
+            name: product.name,
+            price: Number(product.selling_price ?? product.purchase_price ?? 0),
             stock: Number(currentStock),
-            barcode: p.barcode ?? '',
-            category: p.category?.name ?? ''
+            barcode: product.barcode ?? '',
+            category: product.category?.name ?? ''
           };
         });
         setProducts(mapped);
@@ -208,7 +217,7 @@ const POSPage: React.FC = () => {
       // Utiliser le client API centralisé (Axios) qui ajoute le token automatiquement
       try {
         const mod = await import('@/api/services/invoice');
-        const { invoice, pdf_url } = await mod.InvoiceService.createInvoice(invoiceData as any);
+        const { invoice, pdf_url } = await mod.InvoiceService.createInvoice(invoiceData);
 
         // Mettre à jour le stock local immédiatement
         cart.forEach(item => {
@@ -224,16 +233,17 @@ const POSPage: React.FC = () => {
         }
         clearCart();
         return;
-      } catch (apiErr: any) {
-        const status = apiErr?.response?.status;
-        const data = apiErr?.response?.data;
+      } catch (apiErr: unknown) {
+        const status = (apiErr as { response?: { status?: number } })?.response?.status;
+        const data = (apiErr as { response?: { data?: unknown } })?.response?.data;
         console.error('Invoice API error:', status, data || apiErr);
         if (status === 401) {
           alert('Votre session a expiré. Veuillez vous reconnecter.');
           return;
         }
         if (status === 422) {
-          alert('Erreurs de validation: ' + JSON.stringify(data?.errors));
+          const errorData = data as { errors?: Record<string, string[]> };
+          alert('Erreurs de validation: ' + JSON.stringify(errorData?.errors));
           return;
         }
         // Fallback: tentative via fetch si Axios indisponible
@@ -337,7 +347,7 @@ const POSPage: React.FC = () => {
                             variant={(productStock[product.id] ?? product.stock) > 10 ? 'default' : (productStock[product.id] ?? product.stock) > 0 ? 'secondary' : 'destructive'}
                             className="text-xs"
                           >
-                            {(productStock[product.id] ?? product.stock) > 0 ? `Stock: ${productStock[product.id] ?? product.stock}` : 'Rupture'}
+                            {(productStock[product.id] ?? product.stock) > 0 ? `Stock: ${Math.max(0, productStock[product.id] ?? product.stock)}` : 'Rupture'}
                           </Badge>
                         </div>
                       </div>

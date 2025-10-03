@@ -10,6 +10,7 @@ use App\Models\StockAlert;
 use App\Models\StockMovement;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class PharmacyController extends Controller
@@ -86,14 +87,18 @@ class PharmacyController extends Controller
 
             // Alertes actives
             $outOfStock = 0;
+            $lowStock = 0;
             foreach ($products as $product) {
-                if ($product->current_stock <= 0) {
+                $currentStock = $product->current_stock;
+                if ($currentStock <= 0) {
                     $outOfStock++;
+                } elseif ($currentStock <= $product->low_stock_threshold) {
+                    $lowStock++;
                 }
             }
 
             $activeAlerts = [
-                'low_stock' => $lowStockProducts,
+                'low_stock' => $lowStock,
                 'near_expiry' => $nearExpiryProducts,
                 'out_of_stock' => $outOfStock,
             ];
@@ -269,7 +274,7 @@ class PharmacyController extends Controller
                 'data' => $stats
             ]);
         } catch (\Exception $e) {
-            \Log::error('quickStats error: ' . $e->getMessage(), [
+            Log::error('quickStats error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
             return response()->json([
@@ -356,7 +361,7 @@ class PharmacyController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('salesStats error: ' . $e->getMessage(), [
+            Log::error('salesStats error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
             return response()->json([

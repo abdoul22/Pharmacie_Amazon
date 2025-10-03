@@ -54,7 +54,7 @@ const StockIndexPage: React.FC = () => {
             id: p.id,
             name: p.name,
             category: p.category?.name || '—',
-            current_stock: p.current_stock ?? p.initial_stock ?? 0,
+            current_stock: Math.max(0, p.current_stock ?? p.initial_stock ?? 0), // Ne pas afficher de stock négatif
             min_stock: p.low_stock_threshold ?? 0,
             max_stock: p.max_stock ?? 0,
             unit_price: p.purchase_price ?? 0,
@@ -62,7 +62,7 @@ const StockIndexPage: React.FC = () => {
             supplier: p.supplier?.name || '—',
             expiry_date: p.expiry_date || undefined,
             batch_number: p.batch_number || undefined,
-            status: (p.current_stock ?? p.initial_stock ?? 0) === 0 ? 'out_of_stock' : (p.current_stock ?? p.initial_stock ?? 0) <= (p.low_stock_threshold ?? 0) ? 'low_stock' : 'in_stock',
+            status: (p.current_stock ?? p.initial_stock ?? 0) <= 0 ? 'out_of_stock' : (p.current_stock ?? p.initial_stock ?? 0) <= (p.low_stock_threshold ?? 0) ? 'low_stock' : 'in_stock',
           }));
           setStockItems(mapped);
         }
@@ -74,7 +74,7 @@ const StockIndexPage: React.FC = () => {
   }, [isAuthenticated, isLoading]);
 
   const getStatusBadge = (status: string, current: number, min: number) => {
-    if (status === 'out_of_stock' || current === 0) {
+    if (status === 'out_of_stock' || current <= 0) {
       return <Badge variant="destructive">Rupture</Badge>;
     }
     if (status === 'low_stock' || current <= min) {

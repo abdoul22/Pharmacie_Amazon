@@ -9,8 +9,7 @@ import AuthLayout from '../layouts/auth-layout';
 import Login from '../pages/auth/login';
 import Register from '../pages/auth/register';
 
-// Page de debug
-import DebugAuthPage from '../pages/debug-auth';
+// Page de debug supprimée
 
 // Pages principales
 import WelcomePharmacyPage from '../pages/welcome-pharmacy';
@@ -51,8 +50,7 @@ import PrescriptionsIndexPage from '../pages/modules/prescriptions/index';
 // User Management
 import UserManagement from '../pages/user-management/UserManagement';
 
-// Test Page
-import TestPage from '../pages/TestPage';
+// Test Page supprimée
 
 // Contexts et hooks
 import { AuthProvider, useAuthContext } from '../contexts/AuthContextSimple';
@@ -134,8 +132,7 @@ const AppRouterContent: React.FC = () => {
               </AuthOnlyRoute>
             } />
 
-            {/* Route de debug */}
-            <Route path="/debug/auth" element={<DebugAuthPage />} />
+            {/* Route de debug supprimée */}
 
         {/* Routes compatibilité (redirection vers /auth) */}
         <Route path="/login" element={<Navigate to="/auth/login" replace />} />
@@ -161,8 +158,7 @@ const AppRouterContent: React.FC = () => {
             </ProtectedRoute>
           } />
 
-          {/* 🧪 Page de Test */}
-          <Route path="test" element={<TestPage />} />
+          {/* 🧪 Page de Test supprimée */}
 
           {/* 💳 Module Paiements - accès Admin+ */}
           <Route path="payments">

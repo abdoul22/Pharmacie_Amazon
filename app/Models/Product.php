@@ -92,7 +92,7 @@ class Product extends Model
      */
     public function getCurrentStockAttribute(): int
     {
-        $movements = $this->stockMovements();
+        $movements = $this->stockMovements;
 
         $stockIn = $movements->where('type', 'in')->sum('quantity');
         $stockOut = $movements->where('type', 'out')->sum('quantity');
@@ -163,7 +163,7 @@ class Product extends Model
     public function scopeLowStock($query)
     {
         return $query->whereRaw('(
-            initial_stock + 
+            initial_stock +
             COALESCE((SELECT SUM(quantity) FROM stock_movements WHERE product_id = products.id AND type = "in"), 0) -
             COALESCE((SELECT SUM(quantity) FROM stock_movements WHERE product_id = products.id AND type = "out"), 0) +
             COALESCE((SELECT SUM(quantity) FROM stock_movements WHERE product_id = products.id AND type = "adjustment"), 0)
