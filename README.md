@@ -25,6 +25,16 @@ Le système de gestion des stocks avec **traçabilité par lots pharmaceutiques*
 
 ### ✅ Étape 4 : Interface Utilisateur Moderne & Gestion des Données (TERMINÉE)
 
+### ✅ Étape 5 : Cohérence des Statistiques & Optimisations (TERMINÉE)
+
+#### 📊 **Corrections des Incohérences Statistiques**
+
+- **Double comptage "Stock Faible"** : Suppression du double comptage dans les calculs de stock faible
+- **Produits en rupture exclus** : Les produits en rupture ne comptent plus dans le total des produits actifs
+- **Valeur stock cohérente** : Utilisation du prix de vente (selling_price) au lieu du prix d'achat (unit_price) pour le calcul de la valeur du stock
+- **Logique des alertes clarifiée** : Distinction claire entre stock faible (1 à seuil minimum) et rupture (≤ 0)
+- **Cohérence inter-pages** : Les statistiques affichées dans `/app/pharmacy` et `/app/stock` sont maintenant identiques
+
 #### 🎨 **Interface Utilisateur Complète**
 
 - **Pages fonctionnelles** : Toutes les pages "en développement" ont été remplacées par des interfaces fonctionnelles
@@ -49,6 +59,7 @@ Le système de gestion des stocks avec **traçabilité par lots pharmaceutiques*
 - **Protection des routes** : Sécurisation de l'accès aux pages selon les rôles utilisateur
 - **Gestion des sessions** : Amélioration de la stabilité des sessions utilisateur
 - **Compilation des assets** : Correction des problèmes de chargement des fichiers CSS/JS
+- **Cohérence des statistiques** : Correction des incohérences dans les calculs de stock et valeur entre les pages
 
 #### 📱 **Pages Fonctionnelles Implémentées**
 
@@ -2035,7 +2046,7 @@ suppliers_orders: commandes fournisseurs
 
 **🏁 Objectif MVP Complet** : **Pharmacie digitale avec paiements mauritaniens fractionnés + modules crédits séparés**
 
-**📊 Progression** : 9/24 modules terminés (37.5%) | **⏱️ Durée totale** : 4.5 mois | **👥 Équipe** : 2-3 développeurs
+**📊 Progression** : 10/24 modules terminés (41.7%) | **⏱️ Durée totale** : 4.5 mois | **👥 Équipe** : 2-3 développeurs
 
 ### 📈 **Modules Terminés Récents**
 
@@ -2046,6 +2057,7 @@ suppliers_orders: commandes fournisseurs
 7. **🎨 Interface Utilisateur Moderne** : Toutes les pages fonctionnelles avec données réelles
 8. **📊 Gestion des Données** : Connexion complète à la base de données MySQL
 9. **🔧 Corrections Techniques** : Résolution des erreurs critiques et amélioration de la stabilité
+10. **📊 Cohérence des Statistiques** : Correction des incohérences dans les calculs de stock et valeur
 
 ### **🇲🇷 Spécificités Mauritaniennes Intégrées**
 

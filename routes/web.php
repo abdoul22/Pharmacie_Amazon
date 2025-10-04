@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\Route;
 
 // Route de login nommée pour éviter l'erreur Sanctum
 Route::get('/login', function () {
-    return response()->json([
-        'message' => 'Unauthenticated. Please login via /auth/login'
-    ], 401);
+    // Rediriger vers la vraie page de login
+    return redirect('/auth/login');
 })->name('login');
 
 Route::get('/{any}', function () {

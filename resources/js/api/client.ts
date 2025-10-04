@@ -158,9 +158,9 @@ class ApiClient {
   private handleAuthenticationError(): void {
     this.clearAuthToken();
 
-    // Rediriger vers la page de connexion
+    // Rediriger vers la page de connexion correcte
     if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
     }
   }
 
